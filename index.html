@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>我的资料站 · 个人学习资料库</title>
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --blue: #2563eb;
+    --green: #059669;
+    --purple: #7c3aed;
+    --orange: #ea580c;
+    --shadow: 0 6px 20px rgba(15, 23, 42, .08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+  }
+  .hero {
+    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+    color: #fff;
+    padding: 56px 24px 48px;
+    text-align: center;
+  }
+  .hero h1 { margin: 0 0 12px; font-size: 2.1rem; letter-spacing: .5px; }
+  .hero p { margin: 0 auto; max-width: 640px; opacity: .92; font-size: 1.05rem; }
+  .hero .tag {
+    display: inline-block; margin-top: 18px; padding: 6px 14px;
+    background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3);
+    border-radius: 999px; font-size: .85rem;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 40px 24px 8px; }
+  .section-title {
+    font-size: 1.35rem; font-weight: 700; margin: 8px 0 6px;
+    padding-left: 12px; border-left: 5px solid var(--blue);
+  }
+  .section-sub { color: var(--muted); margin: 0 0 24px; font-size: .95rem; }
+  .grid {
+    display: grid; gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .card {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px; box-shadow: var(--shadow); transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(15,23,42,.14); }
+  .card .badge {
+    display: inline-block; font-size: .75rem; font-weight: 700; color: #fff;
+    padding: 3px 10px; border-radius: 999px; margin-bottom: 12px;
+  }
+  .b-math { background: var(--green); }
+  .b-sec  { background: var(--orange); }
+  .card h3 { margin: 0 0 8px; font-size: 1.15rem; }
+  .card p { margin: 0; color: var(--muted); font-size: .92rem; }
+  .card .meta { margin-top: 14px; font-size: .8rem; color: #9ca3af; }
+  .add-note {
+    margin-top: 40px; background: #fff; border: 1px dashed var(--blue);
+    border-radius: 14px; padding: 20px 22px;
+  }
+  .add-note h3 { margin: 0 0 8px; color: var(--blue); font-size: 1.05rem; }
+  .add-note ol { margin: 0; padding-left: 20px; color: var(--muted); font-size: .92rem; }
+  .add-note code { background: #eef2ff; color: #4338ca; padding: 1px 6px; border-radius: 5px; font-size: .85rem; }
+  footer { text-align: center; color: #9ca3af; font-size: .82rem; padding: 32px 24px 48px; }
+  footer a { color: var(--blue); text-decoration: none; }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <h1>我的资料站</h1>
+    <p>这里收集我整理与生成的学习资料，点击卡片即可查看。所有页面均为自包含 HTML，打开即读、可离线、可转发。</p>
+    <span class="tag">由 GitHub Pages 免费托管 · 持续更新中</span>
+  </header>
+
+  <main>
+    <h2 class="section-title">资料目录</h2>
+    <p class="section-sub">目前收录 2 份，后续会持续扩充。</p>
+
+    <div class="grid">
+      <a class="card" href="materials/全等三角形判定_复习讲义.html">
+        <span class="badge b-math">数学 · 几何</span>
+        <h3>全等三角形判定 · 复习讲义</h3>
+        <p>五大判定定理（SSS / SAS / ASA / AAS / HL）配静态图示，外加 SSA、AAA 两大陷阱、判定决策树与 8 道自测题。</p>
+        <div class="meta">更新于 2026-09-23 · 约 28 KB</div>
+      </a>
+
+      <a class="card" href="materials/ITSecAI_考前复习资料.html">
+        <span class="badge b-sec">信息安全 · AI</span>
+        <h3>ITSecAI 考前复习资料</h3>
+        <p>信息安全与 AI 方向考前复习要点整理，按知识模块归纳，便于突击回顾。</p>
+        <div class="meta">收录于 2026-09 · 约 42 KB</div>
+      </a>
+    </div>
+
+    <div class="add-note">
+      <h3>想加新资料？很简单</h3>
+      <ol>
+        <li>把新的 HTML 文件放进 <code>materials/</code> 文件夹；</li>
+        <li>在本页 <code>&lt;div class="grid"&gt;</code> 里复制一张 <code>.card</code>，改标题、链接和说明；</li>
+        <li>重新发布（推送更新）即可生效。</li>
+      </ol>
+      <p style="margin:10px 0 0;color:#9ca3af;font-size:.85rem;">懒得动手？直接把资料发给我，我帮你加好并重新上线。</p>
+    </div>
+  </main>
+
+  <footer>
+    个人学习资料库 · 托管于 <a href="https://pages.github.com/" target="_blank" rel="noreferrer">GitHub Pages</a>
+  </footer>
+</body>
+</html>

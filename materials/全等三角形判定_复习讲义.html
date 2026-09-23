@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全等三角形判定 · 复习讲义</title>
+<style>
+  :root{
+    --ink:#1a1a2e;
+    --sub:#4a4a68;
+    --line:#e3e3ee;
+    --brand:#0d5c9c;
+    --brand2:#0e7a6f;
+    --warn:#b3541e;
+    --soft:#f5f7fb;
+    --soft2:#eef4fa;
+    --soft3:#eaf6f4;
+    --chip:#f0f2f7;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--ink);
+    background:#e9edf3;
+    line-height:1.7;
+    font-size:14px;
+  }
+  .page{
+    max-width:900px;
+    margin:0 auto;
+    background:#fff;
+    padding:40px 48px 60px;
+    box-shadow:0 0 30px rgba(20,30,60,.08);
+  }
+  .hero{
+    border-bottom:4px solid var(--brand);
+    padding-bottom:18px;
+    margin-bottom:26px;
+  }
+  .hero h1{
+    font-size:26px;
+    margin:0 0 6px;
+    letter-spacing:.5px;
+  }
+  .hero .sub{
+    color:var(--sub);
+    font-size:14px;
+  }
+  .hero .meta{
+    margin-top:12px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .tag{
+    display:inline-block;
+    background:var(--chip);
+    color:var(--sub);
+    padding:3px 11px;
+    border-radius:20px;
+    font-size:12px;
+  }
+  .tag.hl{background:#e7f0fb;color:var(--brand);font-weight:600;}
+  h2{
+    font-size:20px;
+    margin:38px 0 14px;
+    padding:10px 14px;
+    background:linear-gradient(90deg,var(--brand),#2a7cc7);
+    color:#fff;
+    border-radius:8px;
+    letter-spacing:.5px;
+  }
+  h2.green{background:linear-gradient(90deg,var(--brand2),#27a08f);}
+  h2.orange{background:linear-gradient(90deg,var(--warn),#d8793e);}
+  h3{
+    font-size:16px;
+    margin:24px 0 8px;
+    color:var(--brand);
+    border-left:4px solid var(--brand);
+    padding-left:10px;
+  }
+  h3.green{color:var(--brand2);border-color:var(--brand2);}
+  p{margin:6px 0;}
+  ul,ol{margin:6px 0 10px;padding-left:22px;}
+  li{margin:3px 0;}
+  .card{
+    background:var(--soft);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+    margin:12px 0;
+  }
+  .card.g{background:var(--soft3);border-color:#cbe6e0;}
+  .card.w{background:#fdf4ec;border-color:#f2d8c4;}
+  .card .t{font-weight:700;color:var(--brand);margin-bottom:4px;}
+  .card.g .t{color:var(--brand2);}
+  .card.w .t{color:var(--warn);}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:12px 0;
+    font-size:13px;
+  }
+  th,td{
+    border:1px solid var(--line);
+    padding:7px 10px;
+    text-align:left;
+    vertical-align:top;
+  }
+  th{
+    background:var(--brand);
+    color:#fff;
+    font-weight:600;
+  }
+  tr:nth-child(even) td{background:#fafbfd;}
+  table.green th{background:var(--brand2);}
+  .kw{color:var(--brand);font-weight:700;}
+  .kw.g{color:var(--brand2);}
+  .kw.o{color:var(--warn);}
+  .highlight{
+    background:#fff3c4;
+    padding:1px 5px;
+    border-radius:4px;
+    font-weight:600;
+  }
+  .note{
+    font-size:12px;
+    color:#8a8aa0;
+    margin-top:4px;
+  }
+  .divider{
+    height:1px;
+    background:var(--line);
+    margin:28px 0;
+  }
+  /* 判定定理卡片：图示 + 说明 两栏 */
+  .spec{
+    display:flex;
+    gap:18px;
+    align-items:flex-start;
+    background:var(--soft);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+    margin:12px 0;
+  }
+  .spec .fig{flex:0 0 200px;}
+  .spec .fig svg{width:100%;height:auto;}
+  .spec .body{flex:1;}
+  .spec .badge{
+    display:inline-block;
+    background:#d8f5ea;color:#1d7a4d;
+    padding:2px 12px;border-radius:999px;font-weight:800;font-size:14px;
+  }
+  .spec.no .badge{background:#FF6B6B;color:#fff;}
+  .spec.no{background:#fff6f6;border-color:#f3c9c9;}
+  .tree{
+    background:var(--soft2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+    margin:12px 0;
+  }
+  .tree .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0;}
+  .tree .node{
+    background:#fff;border:1px solid var(--line);border-radius:8px;
+    padding:6px 12px;font-weight:600;
+  }
+  .tree .node.q{background:#e7f0fb;color:var(--brand);}
+  .tree .node.ok{background:#d8f5ea;color:#1d7a4d;border-color:#bfe9d8;}
+  .tree .node.bad{background:#ffeaea;color:#c0392b;border-color:#f3c9c9;}
+  .tree .arrow{color:var(--sub);font-weight:700;}
+  /* 自测题 */
+  .q{
+    border:1px solid var(--line);
+    border-left:5px solid var(--brand);
+    border-radius:8px;
+    padding:14px 16px;
+    margin:16px 0;
+    page-break-inside:avoid;
+  }
+  .q .qtitle{font-weight:700;font-size:15px;color:var(--ink);}
+  .q .qtitle .n{
+    display:inline-flex;align-items:center;justify-content:center;
+    background:var(--brand);color:#fff;width:24px;height:24px;border-radius:50%;
+    font-size:13px;margin-right:8px;
+  }
+  .ans{
+    background:var(--soft3);
+    border:1px dashed #cbe6e0;
+    border-radius:8px;
+    padding:12px 14px;
+    margin-top:10px;
+  }
+  .ans .alabel{
+    font-weight:700;color:var(--brand2);font-size:13px;display:block;margin-bottom:5px;
+  }
+  .hint{
+    font-size:12px;color:var(--warn);
+    background:#fdf4ec;border-radius:6px;padding:4px 9px;
+    margin-top:8px;display:inline-block;
+  }
+  @media print{
+    body{background:#fff;}
+    .page{box-shadow:none;max-width:100%;padding:20px 10px;}
+    h2{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    th{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .ans,.card,.spec,.q,.tree{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hero">
+    <h1>全等三角形判定 · 复习讲义</h1>
+    <div class="sub">初中数学（初二）· 五大判定定理 + 两大陷阱 + 决策树 + 速查表 · 转发/打印版</div>
+    <div class="meta">
+      <span class="tag hl">初二数学</span>
+      <span class="tag hl">SSS / SAS / ASA / AAS / HL</span>
+      <span class="tag">SSA / AAA 是陷阱</span>
+      <span class="tag">静态版 · 无需联网</span>
+    </div>
+  </div>
+
+  <div class="card w">
+    <div class="t">说明</div>
+    <p style="margin:0">本讲义由原先的"互动课堂"网页整理而成，去掉了需要联网的动画与拖拽，改成<b>纯静态、单文件、可离线打开</b>的格式，方便直接转发给同学或打印背诵。所有图示均为内嵌 SVG，不依赖任何外部库。</p>
+  </div>
+
+  <!-- ============ 第一部分：基础概念 ============ -->
+  <h2>第一部分 · 什么是全等三角形</h2>
+
+  <h3>1.1 定义</h3>
+  <p>两个三角形如果<span class="kw">能够完全重合</span>（形状相同、大小相等），就称它们<span class="kw g">全等</span>。记法：<span class="highlight">△ABC ≌ △DEF</span>。</p>
+  <ul>
+    <li>全等 ⇒ <b>对应边相等</b>、<b>对应角相等</b>。</li>
+    <li>反过来：要证明两个三角形全等，只需满足下面某一条<b>判定定理</b>即可。</li>
+  </ul>
+
+  <h3>1.2 全等变换（不改变形状与大小的"运动"）</h3>
+  <p>把一个三角形的位置/朝向变一变，只要没拉伸、没改变边长和角度，就还是全等的。常见三种：</p>
+  <table>
+    <tr><th style="width:24%">变换</th><th>说明</th><th style="width:34%">直观理解</th></tr>
+    <tr><td><b>平移</b></td><td>整体沿一个方向移动，方向、朝向都不变</td><td>把三角形"滑"过去</td></tr>
+    <tr><td><b>翻折（轴对称）</b></td><td>沿一条对称轴镜像翻转，左右互换</td><td>把三角形"翻"过去</td></tr>
+    <tr><td><b>旋转</b></td><td>绕一个中心点转动一定角度</td><td>把三角形"转"过去</td></tr>
+  </table>
+  <div class="card g">
+    <div class="t">关键结论</div>
+    <p style="margin:0">经过<span class="kw g">平移 / 翻折 / 旋转</span>得到的三角形，与原三角形<b>一定全等</b>。也就是说：只要两个三角形能通过这三种运动重合，它们就是全等的。</p>
+  </div>
+
+  <!-- ============ 第二部分：五大判定定理 ============ -->
+  <h2 class="green">第二部分 · 五大判定定理（核心必背）</h2>
+  <p class="zh">下面每个定理都配了图示：<span style="color:#0d5c9c;font-weight:700">蓝色加粗线 = 给定的边 (S)</span>，<span style="color:#0e7a6f;font-weight:700">绿色弧 = 给定的角 (A)</span>。</p>
+
+  <!-- SSS -->
+  <div class="spec">
+    <div class="fig">
+      <svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="150,30 45,180 255,180" fill="rgba(13,92,156,.06)" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="150" y1="30" x2="45" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
+        <line x1="150" y1="30" x2="255" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
+        <line x1="45" y1="180" x2="255" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
+        <text x="150" y="22" text-anchor="middle" font-size="16" font-weight="700" fill="#475569">A</text>
+        <text x="35" y="198" font-size="16" font-weight="700" fill="#475569">B</text>
+        <text x="262" y="198" font-size="16" font-weight="700" fill="#475569">C</text>
+        <text x="92" y="115" font-size="14" font-weight="700" fill="#0d5c9c">S</text>
+        <text x="208" y="115" font-size="14" font-weight="700" fill="#0d5c9c">S</text>
+        <text x="150" y="200" text-anchor="middle" font-size="14" font-weight="700" fill="#0d5c9c">S</text>
+      </svg>
+    </div>
+    <div class="body">
+      <span class="badge">SSS · 边边边</span>
+      <p style="margin:8px 0 4px"><b>三边分别相等</b>的两个三角形全等。</p>
+      <p class="note" style="margin:0">三条边都给齐了，角一个都不用给——形状和大小就已经被唯一钉死。这是最"省事"的判定。</p>
+    </div>
+  </div>
+
+  <!-- SAS -->
+  <div class="spec">
+    <div class="fig">
+      <svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="150,30 45,180 255,180" fill="rgba(13,92,156,.06)" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="150" y1="30" x2="45" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
+        <line x1="150" y1="30" x2="255" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
+        <path d="M135.1,51.3 Q150,68 164.9,51.3" fill="none" stroke="#0e7a6f" stroke-width="4" stroke-linecap="round"/>
+        <text x="150" y="22" text-anchor="middle" font-size="16" font-weight="700" fill="#475569">A</text>
+        <text x="35" y="198" font-size="16" font-weight="700" fill="#475569">B</text>
+        <text x="262" y="198" font-size="16" font-weight="700" fill="#475569">C</text>
+        <text x="92" y="115" font-size="14" font-weight="700" fill="#0d5c9c">S₁</text>
+        <text x="208" y="115" font-size="14" font-weight="700" fill="#0d5c9c">S₂</text>
+        <text x="150" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#0e7a6f">∠A</text>
+      </svg>
+    </div>
+    <div class="body">
+      <span class="badge">SAS · 边角边</span>
+      <p style="margin:8px 0 4px"><b>两边及其夹角</b>分别相等的两个三角形全等。</p>
+      <p class="note" style="margin:0">⚠️ 必须是<b>"夹角"</b>——即这两条边的公共顶点处的角。角放错位置（变成"边边角"）就<b>不能</b>判定，见第三部分。</p>
+    </div>
+  </div>
+
+  <!-- ASA -->
+  <div class="spec">
+    <div class="fig">
+      <svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="150,30 45,180 255,180" fill="rgba(14,122,111,.06)" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="150" y1="30" x2="255" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
+        <path d="M135.1,51.3 Q150,68 164.9,51.3" fill="none" stroke="#0e7a6f" stroke-width="4" stroke-linecap="round"/>
+        <path d="M240.1,158.7 Q234.5,150 229,180" fill="none" stroke="#0e7a6f" stroke-width="4" stroke-linecap="round"/>
+        <text x="150" y="22" text-anchor="middle" font-size="16" font-weight="700" fill="#475569">A</text>
+        <text x="35" y="198" font-size="16" font-weight="700" fill="#475569">B</text>
+        <text x="262" y="198" font-size="16" font-weight="700" fill="#475569">C</text>
+        <text x="150" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#0e7a6f">∠A</text>
+        <text x="234" y="150" font-size="14" font-weight="700" fill="#0e7a6f">∠C</text>
+        <text x="208" y="115" font-size="14" font-weight="700" fill="#0d5c9c">夹边</text>
+      </svg>
+    </div>
+    <div class="body">
+      <span class="badge">ASA · 角边角</span>
+      <p style="margin:8px 0 4px"><b>两角及其夹边</b>分别相等的两个三角形全等。</p>
+      <p class="note" style="margin:0">注意：给的是<b>两个角 + 它们夹着的那条边</b>。两个角把中间这条边"夹"住，三角形就被唯一确定了。</p>
+    </div>
+  </div>
+
+  <!-- AAS -->
+  <div class="spec">
+    <div class="fig">
+      <svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="150,30 45,180 255,180" fill="rgba(14,122,111,.06)" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="45" y1="180" x2="255" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
+        <path d="M135.1,51.3 Q150,68 164.9,51.3" fill="none" stroke="#0e7a6f" stroke-width="4" stroke-linecap="round"/>
+        <path d="M59.9,158.7 Q65,150 71,180" fill="none" stroke="#0e7a6f" stroke-width="4" stroke-linecap="round"/>
+        <text x="150" y="22" text-anchor="middle" font-size="16" font-weight="700" fill="#475569">A</text>
+        <text x="35" y="198" font-size="16" font-weight="700" fill="#475569">B</text>
+        <text x="262" y="198" font-size="16" font-weight="700" fill="#475569">C</text>
+        <text x="150" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#0e7a6f">∠A</text>
+        <text x="60" y="150" font-size="14" font-weight="700" fill="#0e7a6f">∠B</text>
+        <text x="150" y="200" text-anchor="middle" font-size="14" font-weight="700" fill="#0d5c9c">对边</text>
+      </svg>
+    </div>
+    <div class="body">
+      <span class="badge">AAS · 角角边</span>
+      <p style="margin:8px 0 4px"><b>两角及一角的对边</b>分别相等的两个三角形全等。</p>
+      <p class="note" style="margin:0">角对的不是夹边也没关系——因为第三个角可由"内角和 180°"算出来，于是它<b>等价于 ASA</b>（详见第四部分）。</p>
+    </div>
+  </div>
+
+  <!-- HL -->
+  <div class="spec">
+    <div class="fig">
+      <svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="70,40 70,170 250,170" fill="rgba(13,92,156,.06)" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="70" y1="40" x2="250" y2="170" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
+        <line x1="70" y1="170" x2="250" y2="170" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
+        <!-- 直角标记（B 处） -->
+        <polyline points="70,150 90,150 90,170" fill="none" stroke="#0e7a6f" stroke-width="2.5"/>
+        <text x="62" y="32" text-anchor="middle" font-size="16" font-weight="700" fill="#475569">A</text>
+        <text x="60" y="188" font-size="16" font-weight="700" fill="#475569">B</text>
+        <text x="258" y="188" font-size="16" font-weight="700" fill="#475569">C</text>
+        <text x="160" y="100" font-size="13" font-weight="700" fill="#0d5c9c">斜边</text>
+        <text x="160" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#0d5c9c">直角边</text>
+      </svg>
+    </div>
+    <div class="body">
+      <span class="badge">HL · 斜边直角边</span>
+      <p style="margin:8px 0 4px"><b>仅适用于直角三角形</b>：斜边和一条直角边分别相等 ⇒ 两个直角三角形全等。</p>
+      <p class="note" style="margin:0">HL 本质上是"SSA 在直角时的唯一特例"（详见第四部分）。普通三角形不能用 SSA，但<b>直角三角形</b>里这一条成立。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="t">一句话口诀</div>
+    <p style="margin:0">边边边、边角边、角边角、角角边、斜边直角边 —— 这五条能判定全等；其余（边边角、角角角）都不行。</p>
+  </div>
+
+  <!-- ============ 第三部分：两大陷阱 ============ -->
+  <h2 class="orange">第三部分 · 两大"陷阱"——不能判定全等</h2>
+
+  <h3 class="green">3.1 SSA（边边角）✗ 为什么不行</h3>
+  <p>已知<b>两条边和其中一个边的对角</b>（即"非夹角"），三角形并<b>不唯一</b>。下面这幅静态图就是经典反例：</p>
+  <div class="spec">
+    <div class="fig">
+      <svg viewBox="0 0 440 250" xmlns="http://www.w3.org/2000/svg">
+        <!-- 底边 AB -->
+        <line x1="60" y1="210" x2="280" y2="210" stroke="#475569" stroke-width="5" stroke-linecap="round"/>
+        <!-- 射线 AC（30°） -->
+        <line x1="60" y1="210" x2="400" y2="37" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 6"/>
+        <!-- 以 B 为圆心、a 为半径的上半圆 -->
+        <path d="M120,210 A160,160 0 0 1 440,210" fill="none" stroke="#0d5c9c" stroke-width="2" stroke-dasharray="6 6" opacity=".65"/>
+        <!-- 三角形1（红） -->
+        <polygon points="60,210 280,210 325.6,56.7" fill="rgba(255,107,107,.18)" stroke="#FF6B6B" stroke-width="2"/>
+        <line x1="280" y1="210" x2="325.6" y2="56.7" stroke="#FF6B6B" stroke-width="6" stroke-linecap="round"/>
+        <!-- 三角形2（青） -->
+        <polygon points="60,210 280,210 124.4,172.85" fill="rgba(61,190,186,.18)" stroke="#3DBEBA" stroke-width="2"/>
+        <line x1="280" y1="210" x2="124.4" y2="172.85" stroke="#3DBEBA" stroke-width="6" stroke-linecap="round"/>
+        <text x="48" y="230" font-size="18" font-weight="700" fill="#475569">A</text>
+        <text x="288" y="230" font-size="18" font-weight="700" fill="#475569">B</text>
+        <text x="332" y="52" font-size="16" font-weight="700" fill="#FF6B6B">C₁</text>
+        <text x="110" y="168" font-size="16" font-weight="700" fill="#3DBEBA">C₂</text>
+        <text x="200" y="135" font-size="13" fill="#94a3b8">固定底边 AB 与 ∠A</text>
+      </svg>
+    </div>
+    <div class="body">
+      <p style="margin:4px 0"><b>固定</b>底边 AB 和 ∠A，只让边 BC 的长度 a 变化：</p>
+      <ul style="margin:4px 0">
+        <li>a 太小（< c·sinA）：圆够不着射线 → <b>0 个</b>三角形；</li>
+        <li>a 在中间（c·sinA &lt; a &lt; c）：圆与射线交于 <b>两点 C₁、C₂</b> → <b>2 个</b>不同的三角形；</li>
+        <li>a 够长（≥ c）：只剩 <b>1 个</b>解（但只是"刚好够长"，不是普适定理）。</li>
+      </ul>
+      <p class="note" style="margin:0">图中 △ABC₁ 与 △ABC₂ 满足<b>完全相同的三组条件</b>（AB、∠A、BC 都相等），却不是同一个三角形 ⇒ <span class="highlight">SSA 不能判定全等</span>。</p>
+    </div>
+  </div>
+
+  <h3 class="green">3.2 AAA（角角角）✗ 为什么不行</h3>
+  <div class="card w">
+    <div class="t">AAA 只保证"相似"</div>
+    <p style="margin:0">三个角分别相等，只能说明两个三角形<b>形状相同</b>，但<b>大小可以放大或缩小</b>。比如两个不同边长的等边三角形，三个角都是 60°，却明显不全等。所以 AAA 只能判定<b>相似</b>，不能判定<b>全等</b>。</p>
+  </div>
+
+  <!-- ============ 第四部分：关键辨析 ============ -->
+  <h2 class="green">第四部分 · 关键辨析（易错点）</h2>
+
+  <h3>4.1 为什么 SAS 的"角"必须是夹角？</h3>
+  <p>字母 A 本身就藏着秘密：在 "SAS" 里，A（角）必须夹在两条 S（边）之间。如果把角的位置放错，变成"两条边 + 其中一边的对角"，那就是 SSA（见 3.1），会产生歧义、无法判定。一句话：<span class="highlight">边角边 = 夹角；不是夹角就废了。</span></p>
+
+  <h3>4.2 为什么 AAS（角角边）也能判定？</h3>
+  <p>三角形内角和恒为 <b>180°</b>。已知 ∠A=55°、∠B=65°，第三个角 <span class="kw g">∠C = 180° − 55° − 65° = 60°</span> 就被"算"出来了！于是"两角 + 一条对边"其实等价于"两角 + 夹边(ASA)"，所以 AAS 同样能判定全等。</p>
+
+  <h3>4.3 为什么直角三角形里 SSA（HL）又行了？</h3>
+  <p>回到第三部分的反例：当 ∠A 从锐角逐渐<b>拉大到 90°</b> 时，那两个交点 C₁、C₂ 会慢慢靠拢、合并、最后消失，歧义不再存在。此时"斜边 + 一条直角边"能唯一确定直角三角形——这正是 <span class="kw g">HL</span>。所以 HL 是 SSA 在直角条件下的<b>唯一成立特例</b>。</p>
+
+  <h3>4.4 全等变换三件套回顾</h3>
+  <p>平移、翻折、旋转这三种"运动"都不会改变三角形的边长和角度，因此变换前后的三角形<b>一定全等</b>。证明全等时，常通过构造变换把一个三角形"挪"到另一个上，从而对应部分重合。</p>
+
+  <!-- ============ 第五部分：决策树 ============ -->
+  <h2>第五部分 · 判定决策树（你该用哪条定理？）</h2>
+  <p class="zh">做题时先看清"手上有哪些条件"，按下面的分支走：</p>
+  <div class="tree">
+    <div class="row"><span class="node q">你手上有哪些条件？</span></div>
+    <div class="row">
+      <span class="node">3 条边</span><span class="arrow">→</span><span class="node ok">SSS</span>
+      <span class="node">2 边 1 角</span><span class="arrow">→</span><span class="node q">角是"夹角"吗？</span><span class="arrow">是→</span><span class="node ok">SAS</span><span class="arrow">否→</span><span class="node bad">SSA（不行）</span>
+    </div>
+    <div class="row">
+      <span class="node">2 角 1 边</span><span class="arrow">→</span><span class="node q">边是"夹边"吗？</span><span class="arrow">是→</span><span class="node ok">ASA</span><span class="arrow">否→</span><span class="node ok">AAS</span>
+    </div>
+    <div class="row">
+      <span class="node">直角三角形</span><span class="arrow">→</span><span class="node ok">HL（斜边+直角边）</span>
+    </div>
+  </div>
+
+  <!-- ============ 第六部分：速查表 ============ -->
+  <h2 class="orange">第六部分 · 判定定理速查表</h2>
+  <p class="zh"><span class="kw g" style="color:#1d7a4d;font-weight:700">绿色</span> = 能判定全等；<span class="kw o" style="color:#b3541e;font-weight:700">红色</span> = 不能！</p>
+  <table class="green">
+    <tr><th style="width:20%">条件</th><th style="width:30%">名称</th><th>能否判定全等</th><th style="width:30%">说明</th></tr>
+    <tr><td><b>SSS</b></td><td>三边分别相等</td><td style="color:#1d7a4d;font-weight:700">✅ 能</td><td>三条边都对应相等</td></tr>
+    <tr><td><b>SAS</b></td><td>两边及其夹角</td><td style="color:#1d7a4d;font-weight:700">✅ 能</td><td>必须是"夹角"</td></tr>
+    <tr><td><b>ASA</b></td><td>两角及其夹边</td><td style="color:#1d7a4d;font-weight:700">✅ 能</td><td>两个角夹着的那条边</td></tr>
+    <tr><td><b>AAS</b></td><td>两角及一角的对边</td><td style="color:#1d7a4d;font-weight:700">✅ 能</td><td>可化为 ASA（内角和 180°）</td></tr>
+    <tr><td><b>HL</b></td><td>斜边 + 一条直角边</td><td style="color:#1d7a4d;font-weight:700">✅ 能</td><td>仅直角三角形；SSA 的特例</td></tr>
+    <tr><td><b>SSA</b></td><td>边、边、非夹角</td><td style="color:#c0392b;font-weight:700">❌ 不能</td><td>可能画出两个不同三角形（歧义）</td></tr>
+    <tr><td><b>AAA</b></td><td>三个角相等</td><td style="color:#c0392b;font-weight:700">❌ 不能</td><td>只相似、大小可不同</td></tr>
+  </table>
+
+  <div class="divider"></div>
+
+  <!-- ============ 第七部分：自测题 ============ -->
+  <h2 class="orange">第七部分 · 自测题（附参考答案）</h2>
+  <p class="zh">遮住答案自己先答一遍，再对照看哪里还含糊。</p>
+
+  <div class="q">
+    <div class="qtitle"><span class="n">1</span>全等三角形的五大判定定理分别是什么？</div>
+    <div class="ans">
+      <span class="alabel">参考答案</span>
+      <p style="margin:0"><b>SSS</b>（边边边）、<b>SAS</b>（边角边）、<b>ASA</b>（角边角）、<b>AAS</b>（角角边）、<b>HL</b>（斜边直角边，仅直角三角形）。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle"><span class="n">2</span>SAS 中的"角"为什么必须是夹角？放错位置会怎样？</div>
+    <div class="ans">
+      <span class="alabel">参考答案</span>
+      <p style="margin:0">SAS 要求两条边<b>以及它们公共顶点处的角</b>。若角不是夹角，就变成了"边边角（SSA）"，可能出现两个满足条件的不同三角形，<b>无法唯一确定</b>，因此不能判定全等。</p>
+      <span class="hint">诀窍：字母 A 在 SAS 中间，就表示它夹在两条边之间。</span>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle"><span class="n">3</span>为什么 SSA 不能判定全等？请举出反例思路。</div>
+    <div class="ans">
+      <span class="alabel">参考答案</span>
+      <p style="margin:0">固定底边 AB 和 ∠A，让边 BC 的长度 a 变化：当 a 处于中间范围（c·sinA &lt; a &lt; c）时，以 B 为圆心、a 为半径的圆会与射线 AC 交于<b>两个点 C₁、C₂</b>，从而画出<b>两个不同的三角形</b>。两组三角形满足完全相同的 SSA 条件却不全等，所以 SSA 不能判定全等。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle"><span class="n">4</span>AAS 为什么也能判定全等？它和 ASA 有什么关系？</div>
+    <div class="ans">
+      <span class="alabel">参考答案</span>
+      <p style="margin:0">因为三角形内角和恒为 <b>180°</b>，已知两个角就能算出第三个角。于是"两角 + 一角的对边"实质上等价于"两角 + 夹边（ASA）"，所以 AAS 也能判定全等。换句话说，<b>AAS 可以通过内角和转化为 ASA</b>。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle"><span class="n">5</span>HL 是什么？为什么它只在直角三角形中成立？</div>
+    <div class="ans">
+      <span class="alabel">参考答案</span>
+      <p style="margin:0">HL = <b>斜边 + 一条直角边</b>对应相等，则两个直角三角形全等。它成立的本质原因是：在直角条件下，原本 SSA 的"双解歧义"会随直角而消失（两个交点合并为一个），所以 HL 是 <b>SSA 在直角时的唯一特例</b>。普通三角形没有这个保证，故不能套用。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle"><span class="n">6</span>AAA（三个角都相等）为什么不能判定全等？</div>
+    <div class="ans">
+      <span class="alabel">参考答案</span>
+      <p style="margin:0">三个角相等只能说明两个三角形<b>形状相同（相似）</b>，但边长可以按比例放大或缩小。例如边长分别为 2、2、2 和 4、4、4 的两个等边三角形，三角都是 60°，却明显不全等。所以 AAA 只能判定<b>相似</b>，不能判定<b>全等</b>。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle"><span class="n">7</span>全等三角形有哪些"运动"变换？它们有什么共同特点？</div>
+    <div class="ans">
+      <span class="alabel">参考答案</span>
+      <p style="margin:0">三类：<b>平移、翻折（轴对称）、旋转</b>。共同点是都<b>不改变图形的形状和大小</b>（不拉伸、不改变边长和角度），因此变换前后的三角形一定全等。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle"><span class="n">8</span>已知"两角及一边"，怎么判断该用 ASA 还是 AAS？</div>
+    <div class="ans">
+      <span class="alabel">参考答案</span>
+      <p style="margin:0">看这条边是不是<b>两个角的夹边</b>：<br>
+      · 是夹边 → 用 <b>ASA</b>（两角夹一边）；<br>
+      · 不是夹边（即某角的对边）→ 用 <b>AAS</b>（两角及一角的对边）。<br>
+      两者都能判定全等，区别仅在于边的位置。</p>
+    </div>
+  </div>
+
+  <div class="note" style="text-align:center;margin-top:30px;border-top:1px solid var(--line);padding-top:16px;">
+    祝考试顺利！做题时先看清"给了什么条件"，再按决策树选定理；牢记 <span class="highlight">SAS 要夹角、SSA 是陷阱、AAS 可化 ASA、HL 只用于直角</span>。
+  </div>
+
+</div>
+</body>
+</html>
