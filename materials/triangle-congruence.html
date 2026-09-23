@@ -1,549 +1,1051 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>全等三角形判定 · 复习讲义</title>
+<!--
+============================================================
+  全等三角形判定 · 互动教学单页 (SPA)  —— v2 改进版
+  面向：初中二年级学生
+  技术栈：原生 HTML + Tailwind(CSS) + GSAP(动画) + 原生 SVG(几何绘图)
+  说明：单文件即开即用，平板/手机双击浏览器即可运行，无需构建。
+
+  v2 相对 v1 的主要改进：
+   1. 模块② 改为"真实形变"：两条斜边 + 横杠的端点做数值插值，
+      横杠平滑上移并弯成顶角弧 —— 不再是"淡出淡入"的假 morph。
+   2. 模块③ 重写场景：只画"上半圆弧"(不再溢出画布)，新增
+      "条件对比表 + 等长刻度记号"，直观说明"三组条件相同却不同形"。
+   3. 模块⑤ 全等变换三件套重做：改用不等边三角形，让"翻折/旋转"
+      看得出差别；三种变换各自数学精确地重合，并配对称轴/旋转中心/
+      平移向量等视觉辅助。（等腰三角形翻折前后一样，是 v1 的教学缺陷）
+   4. 模块④ 加具体角度数值(55°/65°/60°)与角标，透视本质动画更清楚。
+   5. 新增 ⑥ 判定定理速查表（含 SSA / AAA 两个反例）。
+   6. 性能：SSA 拖动滑块用 rAF 节流；SVG 颜色全用十六进制(iPad/Safari)。
+   7. 可访问性：允许缩放、按钮加 aria、导航随滚动高亮当前模块。
+   8. 健壮性：CDN 加载失败会给出提示条；GSAP 缺失时页面不整体崩掉。
+============================================================
+-->
+<html lang="zh-CN" data-page-node-id="jm3tLCPGQ05fChWnUawTuW">
+<head data-page-node-id="8CASZr9gHwzKAoUgThsup1">
+<meta charset="UTF-8" data-page-node-id="vpEww27m9cBv0tci4jobia">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="083iKQWY6DIVMh7spbqcSF">
+<title>全等三角形判定 · 互动课堂 (终极融合版)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <style>
   :root{
-    --ink:#1a1a2e;
-    --sub:#4a4a68;
-    --line:#e3e3ee;
-    --brand:#0d5c9c;
-    --brand2:#0e7a6f;
-    --warn:#b3541e;
-    --soft:#f5f7fb;
-    --soft2:#eef4fa;
-    --soft3:#eaf6f4;
-    --chip:#f0f2f7;
+    --coral:#FF6B6B;   /* 珊瑚红 */
+    --yellow:#FFD93D;  /* 明黄 */
+    --sky:#4D96FF;     /* 天蓝 */
+    --teal:#3DBEBA;    /* 青绿 */
+    --purple:#9B7EDE;  /* 柔紫 */
+    --bg1:#F4F7FB;     /* 浅灰蓝背景 */
+    --bg2:#FBF7F0;     /* 米白背景 */
   }
-  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
   body{
-    margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-    color:var(--ink);
-    background:#e9edf3;
-    line-height:1.7;
-    font-size:14px;
+    font-family:"PingFang SC","Microsoft YaHei",-apple-system,system-ui,sans-serif;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));
+    color:#2b3a4a;
   }
-  .page{
-    max-width:900px;
-    margin:0 auto;
-    background:#fff;
-    padding:40px 48px 60px;
-    box-shadow:0 0 30px rgba(20,30,60,.08);
+  @keyframes pulseGlow{
+    0%,100%{opacity:1; filter:drop-shadow(0 0 2px currentColor);}
+    50%{opacity:.45; filter:drop-shadow(0 0 10px currentColor);}
   }
-  .hero{
-    border-bottom:4px solid var(--brand);
-    padding-bottom:18px;
-    margin-bottom:26px;
-  }
-  .hero h1{
-    font-size:26px;
-    margin:0 0 6px;
-    letter-spacing:.5px;
-  }
-  .hero .sub{
-    color:var(--sub);
-    font-size:14px;
-  }
-  .hero .meta{
-    margin-top:12px;
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-  }
-  .tag{
-    display:inline-block;
-    background:var(--chip);
-    color:var(--sub);
-    padding:3px 11px;
-    border-radius:20px;
-    font-size:12px;
-  }
-  .tag.hl{background:#e7f0fb;color:var(--brand);font-weight:600;}
-  h2{
-    font-size:20px;
-    margin:38px 0 14px;
-    padding:10px 14px;
-    background:linear-gradient(90deg,var(--brand),#2a7cc7);
-    color:#fff;
-    border-radius:8px;
-    letter-spacing:.5px;
-  }
-  h2.green{background:linear-gradient(90deg,var(--brand2),#27a08f);}
-  h2.orange{background:linear-gradient(90deg,var(--warn),#d8793e);}
-  h3{
-    font-size:16px;
-    margin:24px 0 8px;
-    color:var(--brand);
-    border-left:4px solid var(--brand);
-    padding-left:10px;
-  }
-  h3.green{color:var(--brand2);border-color:var(--brand2);}
-  p{margin:6px 0;}
-  ul,ol{margin:6px 0 10px;padding-left:22px;}
-  li{margin:3px 0;}
-  .card{
-    background:var(--soft);
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:14px 16px;
-    margin:12px 0;
-  }
-  .card.g{background:var(--soft3);border-color:#cbe6e0;}
-  .card.w{background:#fdf4ec;border-color:#f2d8c4;}
-  .card .t{font-weight:700;color:var(--brand);margin-bottom:4px;}
-  .card.g .t{color:var(--brand2);}
-  .card.w .t{color:var(--warn);}
-  table{
-    width:100%;
-    border-collapse:collapse;
-    margin:12px 0;
-    font-size:13px;
-  }
-  th,td{
-    border:1px solid var(--line);
-    padding:7px 10px;
-    text-align:left;
-    vertical-align:top;
-  }
-  th{
-    background:var(--brand);
-    color:#fff;
-    font-weight:600;
-  }
-  tr:nth-child(even) td{background:#fafbfd;}
-  table.green th{background:var(--brand2);}
-  .kw{color:var(--brand);font-weight:700;}
-  .kw.g{color:var(--brand2);}
-  .kw.o{color:var(--warn);}
-  .highlight{
-    background:#fff3c4;
-    padding:1px 5px;
-    border-radius:4px;
-    font-weight:600;
-  }
-  .note{
-    font-size:12px;
-    color:#8a8aa0;
-    margin-top:4px;
-  }
-  .divider{
-    height:1px;
-    background:var(--line);
-    margin:28px 0;
-  }
-  /* 判定定理卡片：图示 + 说明 两栏 */
-  .spec{
-    display:flex;
-    gap:18px;
-    align-items:flex-start;
-    background:var(--soft);
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:14px 16px;
-    margin:12px 0;
-  }
-  .spec .fig{flex:0 0 200px;}
-  .spec .fig svg{width:100%;height:auto;}
-  .spec .body{flex:1;}
-  .spec .badge{
-    display:inline-block;
-    background:#d8f5ea;color:#1d7a4d;
-    padding:2px 12px;border-radius:999px;font-weight:800;font-size:14px;
-  }
-  .spec.no .badge{background:#FF6B6B;color:#fff;}
-  .spec.no{background:#fff6f6;border-color:#f3c9c9;}
-  .tree{
-    background:var(--soft2);
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:16px 18px;
-    margin:12px 0;
-  }
-  .tree .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0;}
-  .tree .node{
-    background:#fff;border:1px solid var(--line);border-radius:8px;
-    padding:6px 12px;font-weight:600;
-  }
-  .tree .node.q{background:#e7f0fb;color:var(--brand);}
-  .tree .node.ok{background:#d8f5ea;color:#1d7a4d;border-color:#bfe9d8;}
-  .tree .node.bad{background:#ffeaea;color:#c0392b;border-color:#f3c9c9;}
-  .tree .arrow{color:var(--sub);font-weight:700;}
-  /* 自测题 */
-  .q{
-    border:1px solid var(--line);
-    border-left:5px solid var(--brand);
-    border-radius:8px;
-    padding:14px 16px;
-    margin:16px 0;
-    page-break-inside:avoid;
-  }
-  .q .qtitle{font-weight:700;font-size:15px;color:var(--ink);}
-  .q .qtitle .n{
-    display:inline-flex;align-items:center;justify-content:center;
-    background:var(--brand);color:#fff;width:24px;height:24px;border-radius:50%;
-    font-size:13px;margin-right:8px;
-  }
-  .ans{
-    background:var(--soft3);
-    border:1px dashed #cbe6e0;
-    border-radius:8px;
-    padding:12px 14px;
-    margin-top:10px;
-  }
-  .ans .alabel{
-    font-weight:700;color:var(--brand2);font-size:13px;display:block;margin-bottom:5px;
-  }
-  .hint{
-    font-size:12px;color:var(--warn);
-    background:#fdf4ec;border-radius:6px;padding:4px 9px;
-    margin-top:8px;display:inline-block;
-  }
-  @media print{
-    body{background:#fff;}
-    .page{box-shadow:none;max-width:100%;padding:20px 10px;}
-    h2{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    th{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    .ans,.card,.spec,.q,.tree{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  }
+  .pulse{animation:pulseGlow 1.3s ease-in-out infinite;}
+  input[type=range]{ -webkit-appearance:none; appearance:none; height:44px; background:transparent; width:100%; cursor:pointer;}
+  input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:5px;background:#d7e0ec;}
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; height:32px;width:32px;border-radius:50%;background:#4D96FF;margin-top:-11px;box-shadow:0 2px 8px rgba(77,150,255,.5);border:3px solid #fff;}
+  input[type=range]::-moz-range-track{height:10px;border-radius:5px;background:#d7e0ec;}
+  input[type=range]::-moz-range-thumb{height:32px;width:32px;border:none;border-radius:50%;background:#4D96FF;box-shadow:0 2px 8px rgba(77,150,255,.5);}
+  .btn{transition:transform .12s ease, box-shadow .2s ease, background .2s ease;}
+  .btn:active{transform:scale(.94);}
+  .btn:disabled{opacity:.5;}
+  .card{background:#fff;border-radius:20px;box-shadow:0 10px 30px rgba(43,58,74,.08);}
+  .nav-link{transition:background .2s,color .2s;}
+  .nav-link:hover{background:rgba(77,150,255,.12);}
+  .tree-node{transition:all .25s ease;}
+  .tree-node.active{border-color:#4D96FF!important;box-shadow:0 0 0 3px rgba(77,150,255,.25);background:#eef4ff;}
+  .tree-node.ok{background:#e9fbf0;border-color:#3DBEBA!important;}
+  .tree-node.bad{background:#ffeef0;border-color:#FF6B6B!important;}
+  .tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:700;}
+  svg text{font-family:inherit;font-weight:700;}
+  .hl-stroke{stroke-width:7;stroke-linecap:round;}
+  .nav-link.active{background:#4D96FF;color:#fff;}
+  .cmptbl{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px;}
+  .cmptbl th,.cmptbl td{border:1px solid #e6d3a3;padding:3px 8px;text-align:center;font-weight:700;}
+  .cmptbl th{background:#fff3d6;}
+  .spec{border:2px solid #e2e8f0;border-radius:16px;padding:14px;transition:all .2s ease;background:#fff;}
+  .spec:hover{border-color:#4D96FF;box-shadow:0 8px 20px rgba(77,150,255,.15);transform:translateY(-2px);}
+  .spec.no:hover{border-color:#FF6B6B;box-shadow:0 8px 20px rgba(255,107,107,.15);}
+  .warnbar{background:#FFF4E5;border:1px solid #FFD9A0;color:#8a5a00;border-radius:14px;padding:10px 14px;font-size:14px;font-weight:700;}
 </style>
 </head>
-<body>
-<div class="page">
+<body class="min-h-screen" data-page-node-id="Io4ImC9Qu3DXaK8tBBxtbt">
 
-  <div class="hero">
-    <h1>全等三角形判定 · 复习讲义</h1>
-    <div class="sub">初中数学（初二）· 五大判定定理 + 两大陷阱 + 决策树 + 速查表 · 转发/打印版</div>
-    <div class="meta">
-      <span class="tag hl">初二数学</span>
-      <span class="tag hl">SSS / SAS / ASA / AAS / HL</span>
-      <span class="tag">SSA / AAA 是陷阱</span>
-      <span class="tag">静态版 · 无需联网</span>
-    </div>
+<!-- ============ 顶部吸顶导航 ============ -->
+<nav id="navbar" class="sticky top-0 z-50 backdrop-blur bg-white/80 border-b border-slate-200" data-page-node-id="11biCw8YCRfPxZAiMJ4LUS">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-2 overflow-x-auto" data-page-node-id="x2zrtb2RNqlZEkm8KKcPHb">
+    <span class="font-extrabold text-sky-600 whitespace-nowrap mr-2" data-page-node-id="3MktwagKi33pkY8ptDWGdp">📐 全等三角形</span>
+    <a href="#m0" class="nav-link px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap bg-sky-50 text-sky-600" data-page-node-id="pgNavS">🛠️ 沙盘</a>
+    <a href="#m1" class="nav-link px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap" data-page-node-id="jhC3TLG5yZHH8MTkrODzaS">① 决策树</a>
+    <a href="#m2" class="nav-link px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap" data-page-node-id="r2VKTHyD9d5PFImFQLWVgo">② SAS</a>
+    <a href="#m3" class="nav-link px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap" data-page-node-id="lGAcYDgMd5BsJEJ5wXR0G0">③ SSA实验室</a>
+    <a href="#m4" class="nav-link px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap" data-page-node-id="pW6nZqwm8q8o0Hmp9w5U6Z">④ ASA/AAS</a>
+    <a href="#m5" class="nav-link px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap" data-page-node-id="bD6EuJKtXs6NEPOeja2LEC">⑤ HL/变换</a>
+    <a href="#m6" class="nav-link px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap" data-page-node-id="yZhOUKP6U1LEsH3W8rN7Bl">⑥ 速查表</a>
   </div>
+</nav>
 
-  <div class="card w">
-    <div class="t">说明</div>
-    <p style="margin:0">本讲义由原先的"互动课堂"网页整理而成，去掉了需要联网的动画与拖拽，改成<b>纯静态、单文件、可离线打开</b>的格式，方便直接转发给同学或打印背诵。所有图示均为内嵌 SVG，不依赖任何外部库。</p>
-  </div>
-
-  <!-- ============ 第一部分：基础概念 ============ -->
-  <h2>第一部分 · 什么是全等三角形</h2>
-
-  <h3>1.1 定义</h3>
-  <p>两个三角形如果<span class="kw">能够完全重合</span>（形状相同、大小相等），就称它们<span class="kw g">全等</span>。记法：<span class="highlight">△ABC ≌ △DEF</span>。</p>
-  <ul>
-    <li>全等 ⇒ <b>对应边相等</b>、<b>对应角相等</b>。</li>
-    <li>反过来：要证明两个三角形全等，只需满足下面某一条<b>判定定理</b>即可。</li>
-  </ul>
-
-  <h3>1.2 全等变换（不改变形状与大小的"运动"）</h3>
-  <p>把一个三角形的位置/朝向变一变，只要没拉伸、没改变边长和角度，就还是全等的。常见三种：</p>
-  <table>
-    <tr><th style="width:24%">变换</th><th>说明</th><th style="width:34%">直观理解</th></tr>
-    <tr><td><b>平移</b></td><td>整体沿一个方向移动，方向、朝向都不变</td><td>把三角形"滑"过去</td></tr>
-    <tr><td><b>翻折（轴对称）</b></td><td>沿一条对称轴镜像翻转，左右互换</td><td>把三角形"翻"过去</td></tr>
-    <tr><td><b>旋转</b></td><td>绕一个中心点转动一定角度</td><td>把三角形"转"过去</td></tr>
-  </table>
-  <div class="card g">
-    <div class="t">关键结论</div>
-    <p style="margin:0">经过<span class="kw g">平移 / 翻折 / 旋转</span>得到的三角形，与原三角形<b>一定全等</b>。也就是说：只要两个三角形能通过这三种运动重合，它们就是全等的。</p>
-  </div>
-
-  <!-- ============ 第二部分：五大判定定理 ============ -->
-  <h2 class="green">第二部分 · 五大判定定理（核心必背）</h2>
-  <p class="zh">下面每个定理都配了图示：<span style="color:#0d5c9c;font-weight:700">蓝色加粗线 = 给定的边 (S)</span>，<span style="color:#0e7a6f;font-weight:700">绿色弧 = 给定的角 (A)</span>。</p>
-
-  <!-- SSS -->
-  <div class="spec">
-    <div class="fig">
-      <svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="150,30 45,180 255,180" fill="rgba(13,92,156,.06)" stroke="#94a3b8" stroke-width="2"/>
-        <line x1="150" y1="30" x2="45" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
-        <line x1="150" y1="30" x2="255" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
-        <line x1="45" y1="180" x2="255" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
-        <text x="150" y="22" text-anchor="middle" font-size="16" font-weight="700" fill="#475569">A</text>
-        <text x="35" y="198" font-size="16" font-weight="700" fill="#475569">B</text>
-        <text x="262" y="198" font-size="16" font-weight="700" fill="#475569">C</text>
-        <text x="92" y="115" font-size="14" font-weight="700" fill="#0d5c9c">S</text>
-        <text x="208" y="115" font-size="14" font-weight="700" fill="#0d5c9c">S</text>
-        <text x="150" y="200" text-anchor="middle" font-size="14" font-weight="700" fill="#0d5c9c">S</text>
-      </svg>
-    </div>
-    <div class="body">
-      <span class="badge">SSS · 边边边</span>
-      <p style="margin:8px 0 4px"><b>三边分别相等</b>的两个三角形全等。</p>
-      <p class="note" style="margin:0">三条边都给齐了，角一个都不用给——形状和大小就已经被唯一钉死。这是最"省事"的判定。</p>
-    </div>
-  </div>
-
-  <!-- SAS -->
-  <div class="spec">
-    <div class="fig">
-      <svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="150,30 45,180 255,180" fill="rgba(13,92,156,.06)" stroke="#94a3b8" stroke-width="2"/>
-        <line x1="150" y1="30" x2="45" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
-        <line x1="150" y1="30" x2="255" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
-        <path d="M135.1,51.3 Q150,68 164.9,51.3" fill="none" stroke="#0e7a6f" stroke-width="4" stroke-linecap="round"/>
-        <text x="150" y="22" text-anchor="middle" font-size="16" font-weight="700" fill="#475569">A</text>
-        <text x="35" y="198" font-size="16" font-weight="700" fill="#475569">B</text>
-        <text x="262" y="198" font-size="16" font-weight="700" fill="#475569">C</text>
-        <text x="92" y="115" font-size="14" font-weight="700" fill="#0d5c9c">S₁</text>
-        <text x="208" y="115" font-size="14" font-weight="700" fill="#0d5c9c">S₂</text>
-        <text x="150" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#0e7a6f">∠A</text>
-      </svg>
-    </div>
-    <div class="body">
-      <span class="badge">SAS · 边角边</span>
-      <p style="margin:8px 0 4px"><b>两边及其夹角</b>分别相等的两个三角形全等。</p>
-      <p class="note" style="margin:0">⚠️ 必须是<b>"夹角"</b>——即这两条边的公共顶点处的角。角放错位置（变成"边边角"）就<b>不能</b>判定，见第三部分。</p>
-    </div>
-  </div>
-
-  <!-- ASA -->
-  <div class="spec">
-    <div class="fig">
-      <svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="150,30 45,180 255,180" fill="rgba(14,122,111,.06)" stroke="#94a3b8" stroke-width="2"/>
-        <line x1="150" y1="30" x2="255" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
-        <path d="M135.1,51.3 Q150,68 164.9,51.3" fill="none" stroke="#0e7a6f" stroke-width="4" stroke-linecap="round"/>
-        <path d="M240.1,158.7 Q234.5,150 229,180" fill="none" stroke="#0e7a6f" stroke-width="4" stroke-linecap="round"/>
-        <text x="150" y="22" text-anchor="middle" font-size="16" font-weight="700" fill="#475569">A</text>
-        <text x="35" y="198" font-size="16" font-weight="700" fill="#475569">B</text>
-        <text x="262" y="198" font-size="16" font-weight="700" fill="#475569">C</text>
-        <text x="150" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#0e7a6f">∠A</text>
-        <text x="234" y="150" font-size="14" font-weight="700" fill="#0e7a6f">∠C</text>
-        <text x="208" y="115" font-size="14" font-weight="700" fill="#0d5c9c">夹边</text>
-      </svg>
-    </div>
-    <div class="body">
-      <span class="badge">ASA · 角边角</span>
-      <p style="margin:8px 0 4px"><b>两角及其夹边</b>分别相等的两个三角形全等。</p>
-      <p class="note" style="margin:0">注意：给的是<b>两个角 + 它们夹着的那条边</b>。两个角把中间这条边"夹"住，三角形就被唯一确定了。</p>
-    </div>
-  </div>
-
-  <!-- AAS -->
-  <div class="spec">
-    <div class="fig">
-      <svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="150,30 45,180 255,180" fill="rgba(14,122,111,.06)" stroke="#94a3b8" stroke-width="2"/>
-        <line x1="45" y1="180" x2="255" y2="180" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
-        <path d="M135.1,51.3 Q150,68 164.9,51.3" fill="none" stroke="#0e7a6f" stroke-width="4" stroke-linecap="round"/>
-        <path d="M59.9,158.7 Q65,150 71,180" fill="none" stroke="#0e7a6f" stroke-width="4" stroke-linecap="round"/>
-        <text x="150" y="22" text-anchor="middle" font-size="16" font-weight="700" fill="#475569">A</text>
-        <text x="35" y="198" font-size="16" font-weight="700" fill="#475569">B</text>
-        <text x="262" y="198" font-size="16" font-weight="700" fill="#475569">C</text>
-        <text x="150" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#0e7a6f">∠A</text>
-        <text x="60" y="150" font-size="14" font-weight="700" fill="#0e7a6f">∠B</text>
-        <text x="150" y="200" text-anchor="middle" font-size="14" font-weight="700" fill="#0d5c9c">对边</text>
-      </svg>
-    </div>
-    <div class="body">
-      <span class="badge">AAS · 角角边</span>
-      <p style="margin:8px 0 4px"><b>两角及一角的对边</b>分别相等的两个三角形全等。</p>
-      <p class="note" style="margin:0">角对的不是夹边也没关系——因为第三个角可由"内角和 180°"算出来，于是它<b>等价于 ASA</b>（详见第四部分）。</p>
-    </div>
-  </div>
-
-  <!-- HL -->
-  <div class="spec">
-    <div class="fig">
-      <svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="70,40 70,170 250,170" fill="rgba(13,92,156,.06)" stroke="#94a3b8" stroke-width="2"/>
-        <line x1="70" y1="40" x2="250" y2="170" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
-        <line x1="70" y1="170" x2="250" y2="170" stroke="#0d5c9c" stroke-width="6" stroke-linecap="round"/>
-        <!-- 直角标记（B 处） -->
-        <polyline points="70,150 90,150 90,170" fill="none" stroke="#0e7a6f" stroke-width="2.5"/>
-        <text x="62" y="32" text-anchor="middle" font-size="16" font-weight="700" fill="#475569">A</text>
-        <text x="60" y="188" font-size="16" font-weight="700" fill="#475569">B</text>
-        <text x="258" y="188" font-size="16" font-weight="700" fill="#475569">C</text>
-        <text x="160" y="100" font-size="13" font-weight="700" fill="#0d5c9c">斜边</text>
-        <text x="160" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#0d5c9c">直角边</text>
-      </svg>
-    </div>
-    <div class="body">
-      <span class="badge">HL · 斜边直角边</span>
-      <p style="margin:8px 0 4px"><b>仅适用于直角三角形</b>：斜边和一条直角边分别相等 ⇒ 两个直角三角形全等。</p>
-      <p class="note" style="margin:0">HL 本质上是"SSA 在直角时的唯一特例"（详见第四部分）。普通三角形不能用 SSA，但<b>直角三角形</b>里这一条成立。</p>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="t">一句话口诀</div>
-    <p style="margin:0">边边边、边角边、角边角、角角边、斜边直角边 —— 这五条能判定全等；其余（边边角、角角角）都不行。</p>
-  </div>
-
-  <!-- ============ 第三部分：两大陷阱 ============ -->
-  <h2 class="orange">第三部分 · 两大"陷阱"——不能判定全等</h2>
-
-  <h3 class="green">3.1 SSA（边边角）✗ 为什么不行</h3>
-  <p>已知<b>两条边和其中一个边的对角</b>（即"非夹角"），三角形并<b>不唯一</b>。下面这幅静态图就是经典反例：</p>
-  <div class="spec">
-    <div class="fig">
-      <svg viewBox="0 0 440 250" xmlns="http://www.w3.org/2000/svg">
-        <!-- 底边 AB -->
-        <line x1="60" y1="210" x2="280" y2="210" stroke="#475569" stroke-width="5" stroke-linecap="round"/>
-        <!-- 射线 AC（30°） -->
-        <line x1="60" y1="210" x2="400" y2="37" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 6"/>
-        <!-- 以 B 为圆心、a 为半径的上半圆 -->
-        <path d="M120,210 A160,160 0 0 1 440,210" fill="none" stroke="#0d5c9c" stroke-width="2" stroke-dasharray="6 6" opacity=".65"/>
-        <!-- 三角形1（红） -->
-        <polygon points="60,210 280,210 325.6,56.7" fill="rgba(255,107,107,.18)" stroke="#FF6B6B" stroke-width="2"/>
-        <line x1="280" y1="210" x2="325.6" y2="56.7" stroke="#FF6B6B" stroke-width="6" stroke-linecap="round"/>
-        <!-- 三角形2（青） -->
-        <polygon points="60,210 280,210 124.4,172.85" fill="rgba(61,190,186,.18)" stroke="#3DBEBA" stroke-width="2"/>
-        <line x1="280" y1="210" x2="124.4" y2="172.85" stroke="#3DBEBA" stroke-width="6" stroke-linecap="round"/>
-        <text x="48" y="230" font-size="18" font-weight="700" fill="#475569">A</text>
-        <text x="288" y="230" font-size="18" font-weight="700" fill="#475569">B</text>
-        <text x="332" y="52" font-size="16" font-weight="700" fill="#FF6B6B">C₁</text>
-        <text x="110" y="168" font-size="16" font-weight="700" fill="#3DBEBA">C₂</text>
-        <text x="200" y="135" font-size="13" fill="#94a3b8">固定底边 AB 与 ∠A</text>
-      </svg>
-    </div>
-    <div class="body">
-      <p style="margin:4px 0"><b>固定</b>底边 AB 和 ∠A，只让边 BC 的长度 a 变化：</p>
-      <ul style="margin:4px 0">
-        <li>a 太小（< c·sinA）：圆够不着射线 → <b>0 个</b>三角形；</li>
-        <li>a 在中间（c·sinA &lt; a &lt; c）：圆与射线交于 <b>两点 C₁、C₂</b> → <b>2 个</b>不同的三角形；</li>
-        <li>a 够长（≥ c）：只剩 <b>1 个</b>解（但只是"刚好够长"，不是普适定理）。</li>
-      </ul>
-      <p class="note" style="margin:0">图中 △ABC₁ 与 △ABC₂ 满足<b>完全相同的三组条件</b>（AB、∠A、BC 都相等），却不是同一个三角形 ⇒ <span class="highlight">SSA 不能判定全等</span>。</p>
-    </div>
-  </div>
-
-  <h3 class="green">3.2 AAA（角角角）✗ 为什么不行</h3>
-  <div class="card w">
-    <div class="t">AAA 只保证"相似"</div>
-    <p style="margin:0">三个角分别相等，只能说明两个三角形<b>形状相同</b>，但<b>大小可以放大或缩小</b>。比如两个不同边长的等边三角形，三个角都是 60°，却明显不全等。所以 AAA 只能判定<b>相似</b>，不能判定<b>全等</b>。</p>
-  </div>
-
-  <!-- ============ 第四部分：关键辨析 ============ -->
-  <h2 class="green">第四部分 · 关键辨析（易错点）</h2>
-
-  <h3>4.1 为什么 SAS 的"角"必须是夹角？</h3>
-  <p>字母 A 本身就藏着秘密：在 "SAS" 里，A（角）必须夹在两条 S（边）之间。如果把角的位置放错，变成"两条边 + 其中一边的对角"，那就是 SSA（见 3.1），会产生歧义、无法判定。一句话：<span class="highlight">边角边 = 夹角；不是夹角就废了。</span></p>
-
-  <h3>4.2 为什么 AAS（角角边）也能判定？</h3>
-  <p>三角形内角和恒为 <b>180°</b>。已知 ∠A=55°、∠B=65°，第三个角 <span class="kw g">∠C = 180° − 55° − 65° = 60°</span> 就被"算"出来了！于是"两角 + 一条对边"其实等价于"两角 + 夹边(ASA)"，所以 AAS 同样能判定全等。</p>
-
-  <h3>4.3 为什么直角三角形里 SSA（HL）又行了？</h3>
-  <p>回到第三部分的反例：当 ∠A 从锐角逐渐<b>拉大到 90°</b> 时，那两个交点 C₁、C₂ 会慢慢靠拢、合并、最后消失，歧义不再存在。此时"斜边 + 一条直角边"能唯一确定直角三角形——这正是 <span class="kw g">HL</span>。所以 HL 是 SSA 在直角条件下的<b>唯一成立特例</b>。</p>
-
-  <h3>4.4 全等变换三件套回顾</h3>
-  <p>平移、翻折、旋转这三种"运动"都不会改变三角形的边长和角度，因此变换前后的三角形<b>一定全等</b>。证明全等时，常通过构造变换把一个三角形"挪"到另一个上，从而对应部分重合。</p>
-
-  <!-- ============ 第五部分：决策树 ============ -->
-  <h2>第五部分 · 判定决策树（你该用哪条定理？）</h2>
-  <p class="zh">做题时先看清"手上有哪些条件"，按下面的分支走：</p>
-  <div class="tree">
-    <div class="row"><span class="node q">你手上有哪些条件？</span></div>
-    <div class="row">
-      <span class="node">3 条边</span><span class="arrow">→</span><span class="node ok">SSS</span>
-      <span class="node">2 边 1 角</span><span class="arrow">→</span><span class="node q">角是"夹角"吗？</span><span class="arrow">是→</span><span class="node ok">SAS</span><span class="arrow">否→</span><span class="node bad">SSA（不行）</span>
-    </div>
-    <div class="row">
-      <span class="node">2 角 1 边</span><span class="arrow">→</span><span class="node q">边是"夹边"吗？</span><span class="arrow">是→</span><span class="node ok">ASA</span><span class="arrow">否→</span><span class="node ok">AAS</span>
-    </div>
-    <div class="row">
-      <span class="node">直角三角形</span><span class="arrow">→</span><span class="node ok">HL（斜边+直角边）</span>
-    </div>
-  </div>
-
-  <!-- ============ 第六部分：速查表 ============ -->
-  <h2 class="orange">第六部分 · 判定定理速查表</h2>
-  <p class="zh"><span class="kw g" style="color:#1d7a4d;font-weight:700">绿色</span> = 能判定全等；<span class="kw o" style="color:#b3541e;font-weight:700">红色</span> = 不能！</p>
-  <table class="green">
-    <tr><th style="width:20%">条件</th><th style="width:30%">名称</th><th>能否判定全等</th><th style="width:30%">说明</th></tr>
-    <tr><td><b>SSS</b></td><td>三边分别相等</td><td style="color:#1d7a4d;font-weight:700">✅ 能</td><td>三条边都对应相等</td></tr>
-    <tr><td><b>SAS</b></td><td>两边及其夹角</td><td style="color:#1d7a4d;font-weight:700">✅ 能</td><td>必须是"夹角"</td></tr>
-    <tr><td><b>ASA</b></td><td>两角及其夹边</td><td style="color:#1d7a4d;font-weight:700">✅ 能</td><td>两个角夹着的那条边</td></tr>
-    <tr><td><b>AAS</b></td><td>两角及一角的对边</td><td style="color:#1d7a4d;font-weight:700">✅ 能</td><td>可化为 ASA（内角和 180°）</td></tr>
-    <tr><td><b>HL</b></td><td>斜边 + 一条直角边</td><td style="color:#1d7a4d;font-weight:700">✅ 能</td><td>仅直角三角形；SSA 的特例</td></tr>
-    <tr><td><b>SSA</b></td><td>边、边、非夹角</td><td style="color:#c0392b;font-weight:700">❌ 不能</td><td>可能画出两个不同三角形（歧义）</td></tr>
-    <tr><td><b>AAA</b></td><td>三个角相等</td><td style="color:#c0392b;font-weight:700">❌ 不能</td><td>只相似、大小可不同</td></tr>
-  </table>
-
-  <div class="divider"></div>
-
-  <!-- ============ 第七部分：自测题 ============ -->
-  <h2 class="orange">第七部分 · 自测题（附参考答案）</h2>
-  <p class="zh">遮住答案自己先答一遍，再对照看哪里还含糊。</p>
-
-  <div class="q">
-    <div class="qtitle"><span class="n">1</span>全等三角形的五大判定定理分别是什么？</div>
-    <div class="ans">
-      <span class="alabel">参考答案</span>
-      <p style="margin:0"><b>SSS</b>（边边边）、<b>SAS</b>（边角边）、<b>ASA</b>（角边角）、<b>AAS</b>（角角边）、<b>HL</b>（斜边直角边，仅直角三角形）。</p>
-    </div>
-  </div>
-
-  <div class="q">
-    <div class="qtitle"><span class="n">2</span>SAS 中的"角"为什么必须是夹角？放错位置会怎样？</div>
-    <div class="ans">
-      <span class="alabel">参考答案</span>
-      <p style="margin:0">SAS 要求两条边<b>以及它们公共顶点处的角</b>。若角不是夹角，就变成了"边边角（SSA）"，可能出现两个满足条件的不同三角形，<b>无法唯一确定</b>，因此不能判定全等。</p>
-      <span class="hint">诀窍：字母 A 在 SAS 中间，就表示它夹在两条边之间。</span>
-    </div>
-  </div>
-
-  <div class="q">
-    <div class="qtitle"><span class="n">3</span>为什么 SSA 不能判定全等？请举出反例思路。</div>
-    <div class="ans">
-      <span class="alabel">参考答案</span>
-      <p style="margin:0">固定底边 AB 和 ∠A，让边 BC 的长度 a 变化：当 a 处于中间范围（c·sinA &lt; a &lt; c）时，以 B 为圆心、a 为半径的圆会与射线 AC 交于<b>两个点 C₁、C₂</b>，从而画出<b>两个不同的三角形</b>。两组三角形满足完全相同的 SSA 条件却不全等，所以 SSA 不能判定全等。</p>
-    </div>
-  </div>
-
-  <div class="q">
-    <div class="qtitle"><span class="n">4</span>AAS 为什么也能判定全等？它和 ASA 有什么关系？</div>
-    <div class="ans">
-      <span class="alabel">参考答案</span>
-      <p style="margin:0">因为三角形内角和恒为 <b>180°</b>，已知两个角就能算出第三个角。于是"两角 + 一角的对边"实质上等价于"两角 + 夹边（ASA）"，所以 AAS 也能判定全等。换句话说，<b>AAS 可以通过内角和转化为 ASA</b>。</p>
-    </div>
-  </div>
-
-  <div class="q">
-    <div class="qtitle"><span class="n">5</span>HL 是什么？为什么它只在直角三角形中成立？</div>
-    <div class="ans">
-      <span class="alabel">参考答案</span>
-      <p style="margin:0">HL = <b>斜边 + 一条直角边</b>对应相等，则两个直角三角形全等。它成立的本质原因是：在直角条件下，原本 SSA 的"双解歧义"会随直角而消失（两个交点合并为一个），所以 HL 是 <b>SSA 在直角时的唯一特例</b>。普通三角形没有这个保证，故不能套用。</p>
-    </div>
-  </div>
-
-  <div class="q">
-    <div class="qtitle"><span class="n">6</span>AAA（三个角都相等）为什么不能判定全等？</div>
-    <div class="ans">
-      <span class="alabel">参考答案</span>
-      <p style="margin:0">三个角相等只能说明两个三角形<b>形状相同（相似）</b>，但边长可以按比例放大或缩小。例如边长分别为 2、2、2 和 4、4、4 的两个等边三角形，三角都是 60°，却明显不全等。所以 AAA 只能判定<b>相似</b>，不能判定<b>全等</b>。</p>
-    </div>
-  </div>
-
-  <div class="q">
-    <div class="qtitle"><span class="n">7</span>全等三角形有哪些"运动"变换？它们有什么共同特点？</div>
-    <div class="ans">
-      <span class="alabel">参考答案</span>
-      <p style="margin:0">三类：<b>平移、翻折（轴对称）、旋转</b>。共同点是都<b>不改变图形的形状和大小</b>（不拉伸、不改变边长和角度），因此变换前后的三角形一定全等。</p>
-    </div>
-  </div>
-
-  <div class="q">
-    <div class="qtitle"><span class="n">8</span>已知"两角及一边"，怎么判断该用 ASA 还是 AAS？</div>
-    <div class="ans">
-      <span class="alabel">参考答案</span>
-      <p style="margin:0">看这条边是不是<b>两个角的夹边</b>：<br>
-      · 是夹边 → 用 <b>ASA</b>（两角夹一边）；<br>
-      · 不是夹边（即某角的对边）→ 用 <b>AAS</b>（两角及一角的对边）。<br>
-      两者都能判定全等，区别仅在于边的位置。</p>
-    </div>
-  </div>
-
-  <div class="note" style="text-align:center;margin-top:30px;border-top:1px solid var(--line);padding-top:16px;">
-    祝考试顺利！做题时先看清"给了什么条件"，再按决策树选定理；牢记 <span class="highlight">SAS 要夹角、SSA 是陷阱、AAS 可化 ASA、HL 只用于直角</span>。
-  </div>
-
+<!-- CDN 加载失败提示（默认隐藏，脚本检测到库缺失时显示） -->
+<div id="cdnWarn" class="warnbar max-w-5xl mx-auto mt-3 hidden" data-page-node-id="GIOy7yuttTiVeHxNFqAdN2">
+  ⚠️ 未能加载样式/动画库（Tailwind / GSAP）。请检查网络后刷新；页面文字仍可阅读，但动画与美化会失效。
 </div>
+
+<!-- ============ 封面 ============ -->
+<header class="max-w-5xl mx-auto px-5 pt-10 pb-6 text-center" data-page-node-id="e4YzW8QmBaDXudlnmgkNHL">
+  <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-800" data-page-node-id="4zFhz1Cx5X1jaTSvytHVTT">两个三角形，怎么才算"一模一样"？</h1>
+  <p class="mt-3 text-base sm:text-lg text-slate-500" data-page-node-id="YC1LF2BgsOyL8FYh7nTYPb">初二专属互动课堂 · 拖动、点击、观察，把抽象的判定定理看个明白 👇</p>
+</header>
+
+<!-- ============ 互动三角形沙盘（自由探索 · 来自 v1 的精华） ============ -->
+<section id="m0" class="max-w-5xl mx-auto px-5 py-8 scroll-mt-20">
+  <div class="card p-6 sm:p-8">
+    <h2 class="text-2xl font-extrabold text-slate-800">🛠️ 互动三角形沙盘 · 先动手玩一玩</h2>
+    <p class="mt-2 text-slate-500">拖动三个彩色小圆点（顶点）随便拉！边会变长变短、角会变大变小，整个三角形也能拉大拉小。下面的边、角数值都会实时跟着变——玩熟了，后面的判定定理一看就懂。</p>
+
+    <div class="mt-6 grid lg:grid-cols-2 gap-6 items-stretch">
+      <!-- 左：SVG 画布（可拖拽顶点） -->
+      <div class="card border-2 border-slate-100 p-3 bg-slate-50/60">
+        <svg id="pgSvg" viewBox="0 0 600 420" class="w-full touch-none select-none">
+          <!-- 三条边 -->
+          <line id="pgAB" stroke="#4D96FF" stroke-width="5" stroke-linecap="round"/>
+          <line id="pgBC" stroke="#FF6B6B" stroke-width="5" stroke-linecap="round"/>
+          <line id="pgCA" stroke="#3DBEBA" stroke-width="5" stroke-linecap="round"/>
+          <!-- 三个内角弧 -->
+          <path id="pgArcA" fill="none" stroke="#4D96FF" stroke-width="2.5" opacity=".85"/>
+          <path id="pgArcB" fill="none" stroke="#FF6B6B" stroke-width="2.5" opacity=".85"/>
+          <path id="pgArcC" fill="none" stroke="#3DBEBA" stroke-width="2.5" opacity=".85"/>
+          <!-- 边长数值标签（贴在边中点） -->
+          <text id="pgLenC" text-anchor="middle" font-size="16" font-weight="700" fill="#4D96FF"></text>
+          <text id="pgLenA" text-anchor="middle" font-size="16" font-weight="700" fill="#FF6B6B"></text>
+          <text id="pgLenB" text-anchor="middle" font-size="16" font-weight="700" fill="#3DBEBA"></text>
+          <!-- 角度数值标签（贴在顶点内侧） -->
+          <text id="pgAngA" text-anchor="middle" font-size="15" font-weight="800" fill="#4D96FF"></text>
+          <text id="pgAngB" text-anchor="middle" font-size="15" font-weight="800" fill="#FF6B6B"></text>
+          <text id="pgAngC" text-anchor="middle" font-size="15" font-weight="800" fill="#3DBEBA"></text>
+          <!-- 可拖拽顶点 -->
+          <circle id="pgA" r="16" fill="#4D96FF" stroke="#fff" stroke-width="3" style="cursor:grab;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))"/>
+          <circle id="pgB" r="16" fill="#FF6B6B" stroke="#fff" stroke-width="3" style="cursor:grab;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))"/>
+          <circle id="pgC" r="16" fill="#3DBEBA" stroke="#fff" stroke-width="3" style="cursor:grab;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))"/>
+          <!-- 顶点字母（不挡拖拽） -->
+          <text id="pgLabA" text-anchor="middle" font-size="17" font-weight="800" fill="#fff" pointer-events="none"></text>
+          <text id="pgLabB" text-anchor="middle" font-size="17" font-weight="800" fill="#fff" pointer-events="none"></text>
+          <text id="pgLabC" text-anchor="middle" font-size="17" font-weight="800" fill="#fff" pointer-events="none"></text>
+        </svg>
+        <div class="mt-3 flex justify-center">
+          <button id="pgReset" class="btn bg-slate-200 text-slate-700 font-bold px-5 py-2 rounded-xl">↺ 恢复默认三角形</button>
+        </div>
+      </div>
+
+      <!-- 右：实时数据面板 -->
+      <div class="flex flex-col gap-4">
+        <div class="card border-2 border-slate-100 p-5">
+          <div class="text-sm text-slate-400 mb-2">三边长度（单位，1 单位 = 50 像素）</div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div><div class="text-xs text-slate-400">BC = a</div><div id="pgVa" class="text-xl font-extrabold" style="color:#FF6B6B">–</div></div>
+            <div><div class="text-xs text-slate-400">AC = b</div><div id="pgVb" class="text-xl font-extrabold" style="color:#3DBEBA">–</div></div>
+            <div><div class="text-xs text-slate-400">AB = c</div><div id="pgVc" class="text-xl font-extrabold" style="color:#4D96FF">–</div></div>
+          </div>
+        </div>
+        <div class="card border-2 border-slate-100 p-5">
+          <div class="text-sm text-slate-400 mb-2">三个内角（度）</div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div><div class="text-xs text-slate-400">∠A</div><div id="pgDegA" class="text-xl font-extrabold" style="color:#4D96FF">–</div></div>
+            <div><div class="text-xs text-slate-400">∠B</div><div id="pgDegB" class="text-xl font-extrabold" style="color:#FF6B6B">–</div></div>
+            <div><div class="text-xs text-slate-400">∠C</div><div id="pgDegC" class="text-xl font-extrabold" style="color:#3DBEBA">–</div></div>
+          </div>
+        </div>
+        <div class="card border-2 border-dashed border-slate-200 p-5 flex items-center justify-between">
+          <div>
+            <div class="text-sm text-slate-400">这是一个…</div>
+            <div id="pgType" class="text-lg font-extrabold text-slate-700 mt-1">–</div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm text-slate-400">周长 / 面积</div>
+            <div id="pgPA" class="text-sm font-bold text-slate-600 mt-1">–</div>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">💡 试试看：把三个角都拉到约 60°，看看是不是"等边三角形"；拉出一个 90° 角，看看它变成了什么三角形；再观察三个角之和是不是永远 180°？</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 模块1：判定决策树 ============ -->
+<section id="m1" class="max-w-5xl mx-auto px-5 py-8 scroll-mt-20" data-page-node-id="1hlA7WBWciZlNrkpYL2L4i">
+  <div class="card p-6 sm:p-8" data-page-node-id="6qSzUCBb9eGbtSJi1dMdeY">
+    <h2 class="text-2xl font-extrabold text-slate-800" data-page-node-id="e9Q7OlsMdxEKCXZGXpDJZB">① 判定决策树 · 你该用哪条定理？</h2>
+    <p class="mt-2 text-slate-500" data-page-node-id="gj6iBtPHyrSyYpaAoqoB38">先点下面的问题，跟着分支走，树会帮你高亮"正确路线"，并带你滑到对应的讲解。</p>
+
+    <div class="mt-6 grid md:grid-cols-2 gap-6" data-page-node-id="GQhFWDn5uvHz9CtHO0l83e">
+      <div data-page-node-id="98uiRGC8zWw3APVh6fyBF7">
+        <div id="treeStart" class="tree-node card border-2 border-slate-200 p-4 text-center font-bold text-lg" data-page-node-id="I2yniFEI0S4UFijXilNVQJ">你手上有哪些条件？</div>
+        <div id="treeOptions" class="mt-4 grid grid-cols-2 gap-3" data-page-node-id="65GUTtNNEBqObXZbkSJ9z8">
+          <button data-next="sss"  class="tree-node card border-2 border-slate-200 p-3 font-semibold hover:border-sky-400" data-page-node-id="DMwweO6s3iDqkJsxAsR5IQ">3 条边</button>
+          <button data-next="twoS1A" class="tree-node card border-2 border-slate-200 p-3 font-semibold hover:border-sky-400" data-page-node-id="Hb7j3TqwmPHNLqNLfJA7YL">2 边 1 角</button>
+          <button data-next="twoA1S" class="tree-node card border-2 border-slate-200 p-3 font-semibold hover:border-sky-400" data-page-node-id="4YRrAPrI7cFPBRiiDOXil0">2 角 1 边</button>
+          <button data-next="rt"   class="tree-node card border-2 border-slate-200 p-3 font-semibold hover:border-sky-400" data-page-node-id="nK9GfmClSo2GtfO5nAJ58l">直角三角形</button>
+        </div>
+        <div id="treeSub" class="mt-4 hidden" data-page-node-id="pckjtEwoeslmlvMFRTxhrt">
+          <div id="treeQ" class="tree-node card border-2 border-slate-200 p-3 text-center font-bold" data-page-node-id="HdDAzNkEQDFUQuY3So2ndd"></div>
+          <div id="treeSubOpts" class="mt-3 grid grid-cols-2 gap-3" data-page-node-id="PQhKGCObrGOI5lcJmNV4ID"></div>
+        </div>
+        <button id="treeReset" class="mt-4 text-sm text-slate-400 underline" data-page-node-id="HexkIxVZsXhOpb5jkqi2Fo">↺ 重新选择</button>
+      </div>
+
+      <div id="treeResult" class="card border-2 border-dashed border-slate-200 p-5 flex flex-col items-center justify-center text-center min-h-[200px]" data-page-node-id="zRlFSGIw0QbsSHs6CQP9F1">
+        <div class="text-5xl" data-page-node-id="kllaiHKOI33fnZKueV9SLk">🤔</div>
+        <p class="mt-3 text-slate-500" data-page-node-id="jDI1nvGoazbNTzHirrGE0J">点左边，看看你该用哪条判定～</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 模块2：SAS —— A 的两条边与夹角 ============ -->
+<section id="m2" class="max-w-5xl mx-auto px-5 py-8 scroll-mt-20" data-page-node-id="rASOUsuqdGaMBVpHXYnGgs">
+  <div class="card p-6 sm:p-8" data-page-node-id="t5Ub3JF15ukHZRLE8fmsXe">
+    <h2 class="text-2xl font-extrabold text-slate-800" data-page-node-id="RaPkMEOX3RXVOo8ljbwn6Y">② SAS 判定 · 为什么必须是"夹角"？</h2>
+    <p class="mt-2 text-slate-500" data-page-node-id="BqC29eLilBbMdBNENDkdPL">字母 <b data-page-node-id="2fSXq6zaGp2KwALstlWfGE">A</b> 本身就藏着秘密：两条斜边，夹着中间一横。点"开始变形"，看两条边怎么张开成三角形。</p>
+
+    <div class="grid lg:grid-cols-2 gap-6 mt-4" data-page-node-id="brplcXXZSeLfcNPWHmi7Qs">
+      <div class="bg-slate-50 rounded-2xl p-2" data-page-node-id="Gn3ZRQXUGARtlIjWEx97we">
+        <svg id="sasSvg" viewBox="0 0 600 400" class="w-full h-auto" data-page-node-id="4u1FZeGIeYfFX8CgBp0Slq">
+          <!-- 底边：初始长度 0，变形时展开 -->
+          <line id="sasBase" x1="300" y1="320" x2="300" y2="320" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" opacity="0" data-page-node-id="FzABUAu39ogOWDLcBbFo25"/>
+          <!-- 两条斜边（= 三角形的两条边） -->
+          <line id="sasLegL" x1="300" y1="90" x2="262" y2="300" stroke="#4D96FF" stroke-width="7" stroke-linecap="round" data-page-node-id="G5dETYjcgNorWTEBZFYaMB"/>
+          <line id="sasLegR" x1="300" y1="90" x2="338" y2="300" stroke="#FF6B6B" stroke-width="7" stroke-linecap="round" data-page-node-id="qMI1GXbj2QvBDn4EEhTUBf"/>
+          <!-- 横杠（= 两边之间的夹角；用 path 便于 morph 成角弧） -->
+          <path id="sasBar" d="M 272,215 Q 300,215 328,215" fill="none" stroke="#FFD93D" stroke-width="7" stroke-linecap="round" data-page-node-id="sairKNoRVrZmG1qvzawMZJ"/>
+          <!-- 变形后出现的标注 -->
+          <g id="sasLabels" opacity="0" data-page-node-id="Z8aJgX5KPHTdHwJZXi4L5E">
+            <text x="190" y="224" fill="#4D96FF" font-size="20" data-page-node-id="wzd11BZ5vBZdF2JJ24Zkq7">S₁</text>
+            <text x="392" y="224" fill="#FF6B6B" font-size="20" data-page-node-id="Cph3y0Ou1zAOwrZfydc4BE">S₂</text>
+            <text x="350" y="138" fill="#b58900" font-size="19" data-page-node-id="B32XxLQep9fUfjXEVowOBk">∠A</text>
+          </g>
+          <text id="sasLabel" x="300" y="378" text-anchor="middle" fill="#475569" font-size="21" data-page-node-id="dNrYarpc1cBZQtETB8Lr6N">这是字母 A：两条斜边 + 中间一横</text>
+        </svg>
+      </div>
+
+      <div class="flex flex-col gap-4" data-page-node-id="GPKDLuqJQBE5RtEMhRFwDg">
+        <button id="sasStart" class="btn bg-sky-500 text-white font-bold text-lg py-4 rounded-2xl shadow-lg" data-page-node-id="2feLr3ACXLmtiJsGMrqCf4">▶ 开始变形</button>
+        <button id="sasReset" class="btn bg-slate-200 text-slate-700 font-bold py-3 rounded-2xl" data-page-node-id="Z53soYT5TpWIz8WsygrxKj">↺ 重置</button>
+
+        <div class="card border-2 p-4" style="border-color:#FF6B6B" data-page-node-id="GMhlUDIeRlAMLa0tyt1aJ8">
+          <div class="flex items-center gap-3" data-page-node-id="JOGU78b7b8W6EeQoAxk1Cz">
+            <svg viewBox="0 0 170 150" class="w-28 h-24 shrink-0" data-page-node-id="r9de7pgcqNctNeSLFYnYyn">
+              <g id="errA" data-page-node-id="OZxVsC6fajoNbjaCEDHwou">
+                <polygon points="25,115 145,115 95,35" fill="rgba(148,163,184,.12)" stroke="#94a3b8" stroke-width="2" data-page-node-id="OhvhtWFbq1tUT4l0tiAjLr"/>
+                <line x1="25" y1="115" x2="95" y2="35" stroke="#4D96FF" stroke-width="6" stroke-linecap="round" data-page-node-id="FRPtbDbYOGhTD00CbdgBbC"/>
+                <line x1="145" y1="115" x2="95" y2="35" stroke="#FF6B6B" stroke-width="6" stroke-linecap="round" data-page-node-id="n92YcQBYOo1N8569irnzXE"/>
+                <path d="M52,115 Q54,104 62,106" fill="none" stroke="#FFD93D" stroke-width="5" stroke-linecap="round" data-page-node-id="Uan6zy70sQ2LYiLlyjTyKT"/>
+                <text x="6" y="136" fill="#b58900" font-size="14" data-page-node-id="5UaqvLKCegTOmp4sgVq7ZV">∠P</text>
+                <text x="120" y="136" fill="#4D96FF" font-size="14" data-page-node-id="i7BZrXp6XBsnvIJm67ptvD">S₁</text>
+                <text x="100" y="30" fill="#FF6B6B" font-size="14" data-page-node-id="6ixQYwuovnjdx9pS9wBr9v">S₂</text>
+                <g id="errX" opacity="0" stroke="#FF6B6B" stroke-width="7" stroke-linecap="round" data-page-node-id="k9ckEbciyYOmMXvUcmvAad">
+                  <line x1="35" y1="25" x2="135" y2="135" data-page-node-id="XJsgmVHBSLEVivN6FjzNzD"/>
+                  <line x1="135" y1="25" x2="35" y2="135" data-page-node-id="DkMGOputDsLpEeyQuGMkQ0"/>
+                </g>
+              </g>
+            </svg>
+            <div data-page-node-id="FEwq6orln7tz7d9ffzMgmL">
+              <p class="font-bold" style="color:#FF6B6B" data-page-node-id="7yD8xwTEo5eIXeUqFNZnln">❌ 反面教材：边边角 (SSA)</p>
+              <p class="text-sm text-slate-500 mt-1" data-page-node-id="TWhInIOOv3FcznUd8O9c3Y">黄角 <b data-page-node-id="HYxR26Vk2R4dmTCU0Zs9gA">∠P</b> 并不夹在 S₁、S₂ 两条边之间（S₁、S₂ 的夹角在另一个顶点）。角放错位置，就不能判定全等！</p>
+              <button id="errBtn" class="btn mt-2 text-white text-sm font-bold px-4 py-2 rounded-xl" style="background:#FF6B6B" data-page-node-id="Qn7CAFe0Bt6VR9HN7AOZvK">戳我看错误</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 模块3：SSA 反例实验室 ============ -->
+<section id="m3" class="max-w-5xl mx-auto px-5 py-8 scroll-mt-20" data-page-node-id="OoiPDnDFABfAX8zsOWGVuy">
+  <div class="card p-6 sm:p-8" data-page-node-id="E3aOOTK6aiFed93ashiql8">
+    <h2 class="text-2xl font-extrabold text-slate-800" data-page-node-id="VK7w0NJQLnRqm0If4hJTKd">③ SSA 反例实验室 · 亲眼看见"画得出两个三角形"</h2>
+    <p class="mt-2 text-slate-500" data-page-node-id="P9IsqWTdAJ51A7AWxS4a7Q">固定底边 AB 和 ∠A，拖动滑块改变边 BC 的长度 a。看看圆和射线能交出几个点？</p>
+
+    <div class="grid lg:grid-cols-5 gap-6 mt-4" data-page-node-id="U5G4PggUPQUxeKQ6OBJAY6">
+      <div class="lg:col-span-3 bg-slate-50 rounded-2xl p-2" data-page-node-id="KHtu2XqroqVUSAvh10IPpN">
+        <svg id="ssaSvg" viewBox="0 0 640 440" class="w-full h-auto" data-page-node-id="V9qI3Yra3v5VHcZAAi0Q2M"></svg>
+      </div>
+      <div class="lg:col-span-2 flex flex-col gap-4" data-page-node-id="7qrTdTX1ZHXAOPUECXt9A5">
+        <div data-page-node-id="fVXJDVuMiFnTM8eBSFgYk3">
+          <label class="font-bold" data-page-node-id="RF6uIg676V10PQ11XS72Hx">边 BC 的长度 a = <span id="aVal" class="text-sky-600" data-page-node-id="IDrzgubBUcRZCpZsVkVF1W">160</span></label>
+          <input id="aSlider" type="range" min="40" max="300" value="160" step="1" aria-label="边BC长度a" data-page-node-id="uQiogY1inG7cd4FPpZFTq7">
+          <p class="text-xs text-slate-400" data-page-node-id="98e2AjoOrbXWJbq6R1DBeW">（底边 c = 220，∠A = 30°，阈值参考线 c·sinA = 110）</p>
+        </div>
+        <div id="ssaMsg" class="card p-4 font-bold min-h-[140px] flex items-center" data-page-node-id="dGYMyFuAopzsFhmfYmFLby"></div>
+        <button id="ssaReset" class="btn bg-slate-200 text-slate-700 font-bold py-3 rounded-2xl" data-page-node-id="VaB2Ow3HPI384sBuiY0A1y">↺ 恢复到双解状态</button>
+        <p class="text-xs text-slate-400" data-page-node-id="YC7rmHpfgj0W0mpMa9IRv9">提示：把 a 调到 <b data-page-node-id="R9cHdcKiyiElNxxfysegdo">110 以下</b> 看"无解"；<b data-page-node-id="3G8dZBrF5wkXtKXPG1QPkj">110~220</b> 看"两个三角形"；<b data-page-node-id="byxd4sMYY2K0LhIN3sCTyD">220 以上</b> 看"唯一"。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 模块4：ASA / AAS 夹与对 ============ -->
+<section id="m4" class="max-w-5xl mx-auto px-5 py-8 scroll-mt-20" data-page-node-id="xsHu9zEmY3B5Yq8GNhiGvu">
+  <div class="card p-6 sm:p-8" data-page-node-id="XvRYdbrM5hDDp1ahYURdMa">
+    <h2 class="text-2xl font-extrabold text-slate-800" data-page-node-id="m8a7pARHMv36MgBLGk3YCp">④ ASA 与 AAS · "夹边"和"对边"差在哪？</h2>
+    <p class="mt-2 text-slate-500" data-page-node-id="BIdAghDkH5N6IjCCCMtqvT">两边画的是同一个三角形，只是"已知条件"标注的位置不同。点"透视本质"，看 AAS 怎么偷偷变成 ASA。</p>
+
+    <div class="grid md:grid-cols-2 gap-6 mt-4" data-page-node-id="9pLfyOtB63hW0MPavdAczP">
+      <div class="bg-slate-50 rounded-2xl p-4" data-page-node-id="y84GD7XGWw3knsmQULPBZK">
+        <div class="text-center font-extrabold mb-1" style="color:#3DBEBA" data-page-node-id="c1LMTCJJ95dcAklD30HqLX">ASA · 两角夹一边</div>
+        <svg id="asaSvg" viewBox="0 0 300 250" class="w-full h-auto" data-page-node-id="mt4337DeI6sYFQfkDCc4wG">
+          <polygon points="55,205 235,205 163,50" fill="rgba(61,190,186,.10)" stroke="#94a3b8" stroke-width="2" data-page-node-id="nwNUcRDULAL2DKPYWbq5AZ"/>
+          <line x1="55" y1="205" x2="235" y2="205" stroke="#3DBEBA" stroke-width="6" stroke-linecap="round" data-page-node-id="bqhCfPELEWhV3PzSDOrhTE"/>
+          <g id="asaMarks" data-page-node-id="TfNV3f3Wmn7BRlbqXre2bV"></g>
+          <text x="150" y="235" fill="#3DBEBA" font-size="15" text-anchor="middle" data-page-node-id="xbBahAYIKFGb9tLKuK0LtE">夹边（高亮）</text>
+        </svg>
+        <p class="text-sm text-slate-500 text-center mt-2" data-page-node-id="xOJUF0afdIRftmgBuNKm8m">两个角正好"夹"着中间这条边 → 唯一确定 ✅</p>
+      </div>
+
+      <div class="bg-slate-50 rounded-2xl p-4" data-page-node-id="ZqLoBFD8ti8TCJyzGxLMf9">
+        <div class="text-center font-extrabold mb-1" style="color:#9B7EDE" data-page-node-id="PkeQJEnbcIYEoFxrlNzByw">AAS · 两角及一对边</div>
+        <svg id="aasSvg" viewBox="0 0 300 250" class="w-full h-auto" data-page-node-id="pMIIQJseWOjzaT5jDyvWdY">
+          <polygon points="55,205 235,205 163,50" fill="rgba(155,126,222,.10)" stroke="#94a3b8" stroke-width="2" data-page-node-id="EkQGYHVL98JLXdi5k1bG4q"/>
+          <line x1="235" y1="205" x2="163" y2="50" stroke="#9B7EDE" stroke-width="6" stroke-linecap="round" data-page-node-id="l1qDee8cTbZ4GNCPRw6YFm"/>
+          <g id="aasMarks" data-page-node-id="jItZvXFYhzug4z8GM079FQ"></g>
+          <g id="aasThird" opacity="0" data-page-node-id="RDCV2oZYmTDq5EKLd4y7IV">
+            <path id="aasArcC" fill="none" stroke="#FFD93D" stroke-width="3" stroke-dasharray="6 5" data-page-node-id="1KFUvrKwZehYboChr2DFnf"/>
+            <text id="aasLabC" x="163" y="26" fill="#b58900" font-size="14" text-anchor="middle" data-page-node-id="XR11W6vAGjla0xTpCQB5LS">∠C=60°（算出来的）</text>
+          </g>
+          <text x="150" y="235" fill="#9B7EDE" font-size="15" text-anchor="middle" data-page-node-id="8DUC8ttWIwexzxoPbhX4h9">对边（高亮）</text>
+        </svg>
+        <div class="flex items-center justify-between mt-2 gap-2" data-page-node-id="ofoStZJDrlYdMluyCDJg7r">
+          <p class="text-sm text-slate-500" data-page-node-id="qFzf4DtzOnfcSXkGU3iAlF">角对的不是夹边？别急——</p>
+          <button id="aasBtn" class="btn text-white text-sm font-bold px-3 py-2 rounded-xl" style="background:#9B7EDE" data-page-node-id="ySJfA3jcoub2JmAD49fcQ8">🔍 透视本质</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="aasExplain" class="mt-4 card p-4 text-slate-600 hidden" data-page-node-id="nPOThRyK7hASFyY7vTkOsI">
+      💡 三角形内角和恒为 <b data-page-node-id="SmqVasxSZNCfgTXZoGoNJK">180°</b>。已知 ∠A=55°、∠B=65°，第三个角 <b data-page-node-id="gc9Jv8KGjq7ZAN7FbX9gRo">∠C = 180° − 55° − 65° = 60°</b> 就被"算"出来了！
+      于是"两角 + 一条对边"其实等价于"两角 + 夹边(ASA)" —— 所以 <b data-page-node-id="sYOQcIlC5bZYrCe1DgELiF">AAS 同样能判定全等</b>。黄色虚线就是算出来的那个角。
+    </div>
+  </div>
+</section>
+
+<!-- ============ 模块5：HL + 全等变换 ============ -->
+<section id="m5" class="max-w-5xl mx-auto px-5 py-8 scroll-mt-20" data-page-node-id="HTs6NHAxZLeFMzE205CUHZ">
+  <div class="card p-6 sm:p-8" data-page-node-id="6apcxegay0fFCR63Cwmjev">
+    <h2 class="text-2xl font-extrabold text-slate-800" data-page-node-id="nYbTH2LRrqZ4PSETmYBQ8f">⑤ HL 的特殊性 &amp; 全等变换三件套</h2>
+    <p class="mt-2 text-slate-500" data-page-node-id="v5WrBnwU3NHKgHKkoPtR6h">为什么直角三角形里"SSA"又行了？拖滑块把 ∠A 拉到 90°，看双解怎么消失。</p>
+
+    <div class="grid lg:grid-cols-5 gap-6 mt-4" data-page-node-id="h4nd8HlRpwG4OJIXM0MHqz">
+      <div class="lg:col-span-3 bg-slate-50 rounded-2xl p-2" data-page-node-id="WAhF9hXghNehW5Q4vQb8Cv">
+        <svg id="hlSvg" viewBox="0 0 640 440" class="w-full h-auto" data-page-node-id="PPhFjo3Tx0AlDBCLOhQA4x"></svg>
+      </div>
+      <div class="lg:col-span-2 flex flex-col gap-4" data-page-node-id="lEDLIDGFg2pYhgdT3zo2jQ">
+        <div data-page-node-id="egDEFng7rv6aU8DcOuYeTL">
+          <label class="font-bold" data-page-node-id="3Qc7OUsWSPYUJrnBqFTKYk">∠A 的大小 = <span id="alphaVal" class="text-sky-600" data-page-node-id="pvR88jHQrBKptsRIzaiV3U">30</span>°</label>
+          <input id="alphaSlider" type="range" min="30" max="90" value="30" step="1" aria-label="角A大小" data-page-node-id="Rb0BBmAGJMffO8kh8Ddgk6">
+        </div>
+        <div data-page-node-id="TsYjRcotf8PwkHM9kTm6vL">
+          <label class="font-bold" data-page-node-id="th1eGVaMF1s0Sc8GIorANQ">边 BC 的长度 a = <span id="aVal2" style="color:#FF6B6B" data-page-node-id="cea7C9d9CNT8vtIUPxQKm6">160</span></label>
+          <input id="aSlider2" type="range" min="40" max="300" value="160" step="1" aria-label="边BC长度" data-page-node-id="G6KGFhtvtAEh2LF0dVNqoa">
+          <p class="text-xs text-slate-400" data-page-node-id="GjzFftQ2QdhtPmG9ySmz3q">底边 c = 220。a 在 (110, 220) 之间会出现"双解"歧义。</p>
+        </div>
+        <div id="hlMsg" class="card p-4 font-bold min-h-[110px] flex items-center" data-page-node-id="prDof6PLMEpVNbrtN1ycQL"></div>
+        <button id="hlPreset" class="btn text-white font-bold py-3 rounded-2xl" style="background:#3DBEBA" data-page-node-id="8Re03l5aDAQFnjosTEAZX3">🎯 一键演示 HL（a=260, ∠A=90°）</button>
+        <p class="text-xs text-slate-400" data-page-node-id="Yw19RBUkiSCJeICLg8pRXn">玩法：先把 a 调到 160、∠A=30° 看"两个三角形"；再拖大 ∠A，看双解如何合并、消失。</p>
+      </div>
+    </div>
+
+    <!-- 全等变换三件套 -->
+    <div class="mt-8" data-page-node-id="N09LJ8JEGKtVtb1OmXoUVv">
+      <h3 class="text-xl font-extrabold text-slate-700" data-page-node-id="HbxAnw3tHNPLOAVwoZrmqu">全等变换三件套：平移 / 翻折 / 旋转</h3>
+      <p class="text-slate-500 text-sm mt-1" data-page-node-id="wh6xL8jvIARDrojAD04hkA">点下面三个按钮，红色的三角形会用三种不同的"运动方式"，精确地落到蓝色三角形上。</p>
+      <div class="grid lg:grid-cols-5 gap-6 mt-3" data-page-node-id="WQEaojBqTJOLYfclstSY3Q">
+        <div class="lg:col-span-3 bg-slate-50 rounded-2xl p-2" data-page-node-id="iGYbCViPUQ5vlzEar7mpA3">
+          <svg id="xfSvg" viewBox="0 0 620 360" class="w-full h-auto" data-page-node-id="ORD5OzEjfwisqTvbxHXBHc">
+            <defs data-page-node-id="X15wKY24aFXjs9CCXLq1QQ">
+              <marker id="xfHead" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto" data-page-node-id="ea9yQj6sNNngHXJHuFZuOR">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#4D96FF" data-page-node-id="BQFVGQDR9MztJqM2aNdqnl"/>
+              </marker>
+            </defs>
+            <!-- 辅助线：对称轴（仅翻折时显示） -->
+            <g id="xfAxis" opacity="0" data-page-node-id="ROcAylWE1of0KP9TFNgYSG">
+              <line x1="340" y1="26" x2="340" y2="340" stroke="#3DBEBA" stroke-width="2" stroke-dasharray="8 6" data-page-node-id="iQS9igeuBf7ViBMF8PctdH"/>
+              <text x="348" y="44" fill="#3DBEBA" font-size="15" data-page-node-id="aRI1F3zmKmTkvTXr0X18Z8">对称轴</text>
+            </g>
+            <!-- 辅助点：旋转中心（仅旋转时显示） -->
+            <g id="xfPivot" opacity="0" data-page-node-id="GIHIEdomoH4xXR2hOJmSRp">
+              <circle cx="310" cy="250" r="12" fill="none" stroke="#9B7EDE" stroke-width="2" opacity=".5" data-page-node-id="VLspCT82ZmXb7Szsf43ysl"/>
+              <circle cx="310" cy="250" r="6" fill="#9B7EDE" data-page-node-id="njtBZAmnpLnGAF0xVVGxZX"/>
+              <text x="322" y="276" fill="#9B7EDE" font-size="15" data-page-node-id="iVqdMRSiGPjh5uXsWAqrQK">旋转中心</text>
+            </g>
+            <!-- 辅助线：平移向量（仅平移时显示） -->
+            <g id="xfArrow" opacity="0" data-page-node-id="vojmYagW0AAEWd8BnDji7H">
+              <line x1="185" y1="122" x2="392" y2="149" stroke="#4D96FF" stroke-width="2" stroke-dasharray="7 6" marker-end="url(#xfHead)" data-page-node-id="PnNS1fkgErxlzgEAUGyo54"/>
+              <text x="300" y="122" fill="#4D96FF" font-size="15" data-page-node-id="oDHWubvHO6tIQyL1X5D4I2">平移</text>
+            </g>
+            <!-- 目标三角形 T1（固定不动） -->
+            <g transform="translate(170,120)" data-page-node-id="EYiA3Nivkwru28WxnILn38">
+              <polygon points="-60,-45 65,-20 5,65" fill="rgba(77,150,255,.10)" stroke="#4D96FF" stroke-width="3" data-page-node-id="oN0wCz5BecEAhj5Vhkw6ao"/>
+              <text x="0" y="92" text-anchor="middle" fill="#4D96FF" font-size="15" data-page-node-id="Bm246LxG6WUlzBro4Mok0m">目标 △（不动）</text>
+            </g>
+            <!-- 待变换三角形 T2（顶点由 JS 设置，变换由 GSAP 控制） -->
+            <g id="xfT2" data-page-node-id="qIratDR2xCmETdmA8SmKMh">
+              <polygon id="xfT2Poly" points="110,75 235,100 175,185" fill="rgba(255,107,107,.14)" stroke="#FF6B6B" stroke-width="3" data-page-node-id="KyGF87GKu6ntyujsPJEhpH"/>
+            </g>
+          </svg>
+        </div>
+        <div class="lg:col-span-2 flex flex-col gap-3 justify-center" data-page-node-id="KAVR7FQAXfdHzB26fLekeq">
+          <button data-xf="move" class="xfBtn btn bg-sky-500 text-white font-bold py-3 rounded-2xl" data-page-node-id="OwFRkPs4QWBPtAVCr6xB18">➡️ 平移</button>
+          <button data-xf="flip" class="xfBtn btn text-white font-bold py-3 rounded-2xl" style="background:#3DBEBA" data-page-node-id="1B611lYYpmVb9KU7IO8a28">🪞 翻折（轴对称）</button>
+          <button data-xf="rot"  class="xfBtn btn text-white font-bold py-3 rounded-2xl" style="background:#9B7EDE" data-page-node-id="OffeAycMUHRxGV7VjTIDGD">🔄 旋转</button>
+          <button id="xfReset" class="btn bg-slate-200 text-slate-700 font-bold py-2 rounded-2xl" data-page-node-id="vykWF4p7a3pAzBOxMFoCrt">↺ 复位</button>
+          <p id="xfTip" class="text-xs text-slate-400" data-page-node-id="UuCW35GtcmFNdHrGuarPIG">当前：三个三角形初始分离。点任意按钮开始。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 模块6：判定定理速查表 ============ -->
+<section id="m6" class="max-w-5xl mx-auto px-5 py-8 scroll-mt-20" data-page-node-id="JNQGsskZDnFOROpH3Ifh0L">
+  <div class="card p-6 sm:p-8" data-page-node-id="mNhcfYfveR159GXzJb4Lje">
+    <h2 class="text-2xl font-extrabold text-slate-800" data-page-node-id="4OUP7ktoZEWxAsFbmWxJlb">⑥ 判定定理速查表</h2>
+    <p class="mt-2 text-slate-500" data-page-node-id="6wF0aX5lxcRF9h2RGWqmSz">做题卡壳时回来扫一眼。<span class="font-bold" style="color:#1d7a4d" data-page-node-id="KHTbDSifDBJwcg7aVZWEeO">绿色</span> = 能判定全等；<span class="font-bold" style="color:#FF6B6B" data-page-node-id="KlLZq3F781nrC9v38s9SE1">红色</span> = 不能！</p>
+    <div class="grid sm:grid-cols-2 gap-3 mt-5" data-page-node-id="0P4hdvqh2vrgZptwRUN5tY">
+      <div class="spec" data-page-node-id="ds2yECP3SLAdNqhR5CBmJb"><span class="tag" style="background:#d8f5ea;color:#1d7a4d" data-page-node-id="lFJh9T6dGnBUJiCzVpWIp7">SSS</span>
+        <p class="font-extrabold mt-1" data-page-node-id="8BeYDQS79rBEyNYfSbUREq">三边分别相等</p>
+        <p class="text-sm text-slate-500" data-page-node-id="DAauyjYwC3sxYg5fVYnxaC">三条边都对应相等 → 全等。一个角都不需要给。</p></div>
+      <div class="spec" data-page-node-id="oecCAHNFzSI5ttJaGCIgGl"><span class="tag" style="background:#d8f5ea;color:#1d7a4d" data-page-node-id="IK8AOmTyHtC2I1nEgNvFjg">SAS</span>
+        <p class="font-extrabold mt-1" data-page-node-id="GH5UloQL16fbgk8ftLBghr">两边及其<b data-page-node-id="xGts2F2iLWUagne7t2Iycb">夹角</b></p>
+        <p class="text-sm text-slate-500" data-page-node-id="chgOX0iakb6boSSSusu8Gg">两条边 + 它们夹着的角 → 全等。必须是"夹角"！</p></div>
+      <div class="spec" data-page-node-id="taLc9IrudqYU53ci8CaAWD"><span class="tag" style="background:#d8f5ea;color:#1d7a4d" data-page-node-id="vhjVwHqxeGWcXxLZQsVSgV">ASA</span>
+        <p class="font-extrabold mt-1" data-page-node-id="MN0iLZM9sjZknX0LxIyVjo">两角及其<b data-page-node-id="VsDsWjBpLMES1E1E8ZW1SA">夹边</b></p>
+        <p class="text-sm text-slate-500" data-page-node-id="JfX2GeaLSbU4A9Um2TVVTM">两个角 + 它们夹着的那条边 → 全等。</p></div>
+      <div class="spec" data-page-node-id="7jQxSTn3IjbtVcgeZlDmAD"><span class="tag" style="background:#d8f5ea;color:#1d7a4d" data-page-node-id="8EOFQ0KsAHHFqHFdu9DSO9">AAS</span>
+        <p class="font-extrabold mt-1" data-page-node-id="VCFUurn0Cx9sOoVbqGI1vD">两角及一<b data-page-node-id="2iT0Iy5RjU5NG2jaCNH7mh">对边</b></p>
+        <p class="text-sm text-slate-500" data-page-node-id="ikA3KtGXe42piB7k4cfTCQ">两个角 + 其中一个角的对边 → 也能全等（可化成 ASA）。</p></div>
+      <div class="spec" data-page-node-id="b845Njx3B7jSy8J1qnIfYI"><span class="tag" style="background:#d8f5ea;color:#1d7a4d" data-page-node-id="fbVR1rLeqQUYSN3K3Plvvg">HL</span>
+        <p class="font-extrabold mt-1" data-page-node-id="DmHSVNEtG96mWnWLhugb1z">斜边 + 一条直角边</p>
+        <p class="text-sm text-slate-500" data-page-node-id="u4bNBQc2grlxHsh7pg725D">只对<b data-page-node-id="AQAwXRQ9iLl3E5aqMjaMv7">直角三角形</b>成立，是 SSA 的唯一特例。</p></div>
+      <div class="spec no" data-page-node-id="OtXf3j5jaQSl3JDKcSwRGU"><span class="tag" style="background:#FF6B6B;color:#fff" data-page-node-id="PpjcCdVzSTgWFP6D0XFe9a">SSA ✗</span>
+        <p class="font-extrabold mt-1" data-page-node-id="kPnbaNfbmQGbj3SdEId0FX">边、边、非夹角</p>
+        <p class="text-sm text-slate-500" data-page-node-id="EDozLFS2q9JRyTcymy5cGF">可能画出两个不同的三角形（歧义）→ 不能判定全等。</p></div>
+      <div class="spec no" data-page-node-id="PdaoKBbCJPS8EgV4CYGcsq"><span class="tag" style="background:#FF6B6B;color:#fff" data-page-node-id="uGh26ZBsFjP1bvJ5WWUf7z">AAA ✗</span>
+        <p class="font-extrabold mt-1" data-page-node-id="AuqiT0IQGiZyBnANjXYkvM">三个角相等</p>
+        <p class="text-sm text-slate-500" data-page-node-id="Zl1UL5emIcJo0NeF30O2ll">只是"形状相似"，大小可以放大缩小 → 不能判定全等。</p></div>
+      <div class="spec" style="border-style:dashed" data-page-node-id="AmkX8qxAGlpPxckFHxuA4t">
+        <p class="font-extrabold" data-page-node-id="fGgq1GUuxCrvlQn07iubkt">💡 一句话口诀</p>
+        <p class="text-sm text-slate-500 mt-1" data-page-node-id="L9qBtpm9oreOfTyE61vXdd">边边边、边角边、角边角、角角边、斜边直角边 —— 其余（边边角、角角角）都不行。</p></div>
+    </div>
+  </div>
+</section>
+
+<footer class="max-w-5xl mx-auto px-5 py-10 text-center text-slate-400 text-sm" data-page-node-id="bDHxDwzAdd6NDHCBEKshPH">
+  全等三角形判定互动课堂 · 终极融合版（v2 改进 + 互动沙盘）· 用 SVG + GSAP 制作 · 适合平板/手机观看
+</footer>
+
+<script>
+/* =========================================================
+   共用工具
+========================================================= */
+const SVGNS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+function svgEl(tag,attrs){                 // 便捷创建 SVG 元素
+  const e=document.createElementNS(SVGNS,tag);
+  for(const k in attrs) e.setAttribute(k,attrs[k]);
+  return e;
+}
+function safeScroll(id){                   // 平滑滚动到模块
+  const el=$(id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function unit(from,p){                     // 单位向量 from -> p
+  const dx=p[0]-from[0], dy=p[1]-from[1], L=Math.hypot(dx,dy)||1;
+  return [dx/L,dy/L];
+}
+function arcD(V,P1,P2,r){                  // 顶点 V 处、夹在 V→P1 与 V→P2 之间的角弧（二次贝塞尔近似）
+  const u1=unit(V,P1), u2=unit(V,P2);
+  const p1=[V[0]+u1[0]*r, V[1]+u1[1]*r];
+  const p2=[V[0]+u2[0]*r, V[1]+u2[1]*r];
+  const bx=u1[0]+u2[0], by=u1[1]+u2[1], bl=Math.hypot(bx,by)||1;
+  const ub=[bx/bl,by/bl];
+  const dot=Math.max(-1,Math.min(1,u1[0]*ub[0]+u1[1]*ub[1]));
+  const dist=r/Math.cos(Math.acos(dot));
+  return `M ${p1[0]},${p1[1]} Q ${V[0]+ub[0]*dist},${V[1]+ub[1]*dist} ${p2[0]},${p2[1]}`;
+}
+function angleMark(parent,V,P1,P2,r,color,label,lx,ly){
+  parent.appendChild(svgEl('path',{d:arcD(V,P1,P2,r),fill:'none',stroke:color,'stroke-width':3,'stroke-linecap':'round'}));
+  if(label){
+    const t=svgEl('text',{x:lx,y:ly,fill:color,'font-size':15,'text-anchor':'middle'});
+    t.textContent=label; parent.appendChild(t);
+  }
+}
+function tick(parent,x1,y1,x2,y2,count,color){   // 在边中点画 count 条等长刻度（数学里表示"等长"）
+  const mx=(x1+x2)/2, my=(y1+y2)/2, dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+  const nx=-dy/L, ny=dx/L, half=7, gap=5;
+  for(let i=0;i<count;i++){
+    const off=(i-(count-1)/2)*gap;
+    const cx=mx+nx*off, cy=my+ny*off;
+    parent.appendChild(svgEl('line',{x1:cx-nx*half,y1:cy-ny*half,x2:cx+nx*half,y2:cy+ny*half,
+      stroke:color,'stroke-width':2.5,'stroke-linecap':'round'}));
+  }
+}
+
+/* GSAP 缺失时的降级：不报错、页面仍可读（动画不生效） */
+if(!window.gsap){
+  const noop=function(){return this;};
+  window.gsap={ set:noop, to:noop, fromTo:noop,
+    timeline(){ return {to:noop, fromTo:noop, add:noop, kill:noop}; } };
+}
+/* CDN 加载失败提示 */
+window.addEventListener('load',function(){
+  if(!window.gsap || !window.tailwind) $('cdnWarn').classList.remove('hidden');
+});
+
+/* =========================================================
+   模块1：判定决策树
+========================================================= */
+(function initTree(){
+  const optBox=$('treeOptions'), subBox=$('treeSub'), qEl=$('treeQ'), subOpts=$('treeSubOpts');
+  const result=$('treeResult'), resetBtn=$('treeReset');
+
+  const LEAVES={
+    sss:{tag:'SSS',cls:'ok',target:'m2',title:'三边相等 (SSS)',desc:'三条边分别对应相等，两个三角形全等。不用给角也行！'},
+    sas:{tag:'SAS',cls:'ok',target:'m2',title:'两边及其夹角 (SAS)',desc:'两条边，且它们的夹角相等 → 全等。注意：必须是"夹角"！'},
+    ssa:{tag:'SSA',cls:'bad',target:'m3',title:'边边角 (SSA) ✗',desc:'给的是边、边、非夹角 → 不能判定全等！去实验室看看为什么。'},
+    asa:{tag:'ASA',cls:'ok',target:'m4',title:'两角及其夹边 (ASA)',desc:'两个角，且它们夹着的边相等 → 全等。'},
+    aas:{tag:'AAS',cls:'ok',target:'m4',title:'两角及一对边 (AAS)',desc:'两个角，及其中一角的对边相等 → 也全等（见"透视本质"）。'},
+    hl:{tag:'HL',cls:'ok',target:'m5',title:'斜边直角边 (HL)',desc:'直角三角形中，斜边+一条直角边相等 → 全等（SSA 的特例）。'}
+  };
+
+  function showResult(key){
+    const L=LEAVES[key], isOk=L.cls==='ok';
+    result.className='card p-5 flex flex-col items-center justify-center text-center min-h-[200px] border-2 '+
+                     (isOk?'border-teal-300':'border-[#FF6B6B]/50');
+    result.innerHTML=
+      `<span class="tag" style="background:${isOk?'#d8f5ea':'#FF6B6B'};color:${isOk?'#1d7a4d':'#fff'}">${L.tag}</span>`+
+      `<p class="mt-3 text-lg font-extrabold text-slate-800">${L.title}</p>`+
+      `<p class="mt-2 text-slate-500 text-sm">${L.desc}</p>`+
+      `<button onclick="safeScroll('${L.target}')" class="btn mt-4 bg-sky-500 text-white font-bold px-5 py-2 rounded-xl">去对应讲解 →</button>`;
+    safeScroll('treeResult');
+  }
+
+  optBox.querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{
+      const next=b.dataset.next;
+      optBox.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      if(next==='sss'||next==='rt'){ subBox.classList.add('hidden'); showResult(next==='sss'?'sss':'hl'); return; }
+      subBox.classList.remove('hidden');
+      if(next==='twoS1A'){
+        qEl.textContent='这个角是两边的"夹角"吗？';
+        subOpts.innerHTML='<button data-leaf="sas" class="tree-node card border-2 border-slate-200 p-3 font-semibold">是 → SAS</button>'+
+                          '<button data-leaf="ssa" class="tree-node card border-2 border-slate-200 p-3 font-semibold">不是 → SSA</button>';
+      }else{
+        qEl.textContent='这条边是两个角的"夹边"吗？';
+        subOpts.innerHTML='<button data-leaf="asa" class="tree-node card border-2 border-slate-200 p-3 font-semibold">是 → ASA</button>'+
+                          '<button data-leaf="aas" class="tree-node card border-2 border-slate-200 p-3 font-semibold">不是 → AAS</button>';
+      }
+      subOpts.querySelectorAll('button').forEach(s=>{
+        s.onclick=()=>{
+          subOpts.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+          s.classList.add('active'); showResult(s.dataset.leaf);
+        };
+      });
+    };
+  });
+
+  resetBtn.onclick=()=>{
+    optBox.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+    subBox.classList.add('hidden');
+    result.className='card border-2 border-dashed border-slate-200 p-5 flex flex-col items-center justify-center text-center min-h-[200px]';
+    result.innerHTML='<div class="text-5xl">🤔</div><p class="mt-3 text-slate-500">点左边，看看你该用哪条判定～</p>';
+  };
+})();
+
+/* =========================================================
+   模块2：SAS —— 字母 A "张开"成三角形（真实形变）
+   A 的两条斜边 = 三角形的两条边；A 的横杠 = 两边之间的夹角。
+   形变方式：对 <line> 的端点做数值插值，对横杠的贝塞尔控制点
+   做数值插值 —— 不依赖付费的 MorphSVG 插件也能真正 morph。
+========================================================= */
+(function initSAS(){
+  const legL=$('sasLegL'), legR=$('sasLegR'), bar=$('sasBar'), base=$('sasBase');
+  const labels=$('sasLabels'), lab=$('sasLabel');
+  const start=$('sasStart'), reset=$('sasReset');
+  const errA=$('errA'), errX=$('errX'), errBtn=$('errBtn');
+  let tl=null;
+
+  // 横杠 morph 的关键帧：[起点x,y, 控制点x,y, 终点x,y]
+  const BAR_A  =[272,215, 300,215,     328,215  ];        // 字母 A 的横杠（一条直线）
+  const BAR_TRI=[272.25,143.2, 300,157.68, 327.75,143.2];  // 顶角弧（两条斜边之间的夹角）
+
+  function toA(){
+    if(tl) tl.kill();
+    legL.setAttribute('x2',262); legL.setAttribute('y2',300);
+    legR.setAttribute('x2',338); legR.setAttribute('y2',300);
+    bar.setAttribute('d','M '+BAR_A[0]+','+BAR_A[1]+' Q '+BAR_A[2]+','+BAR_A[3]+' '+BAR_A[4]+','+BAR_A[5]);
+    base.setAttribute('x1',300); base.setAttribute('x2',300);
+    gsap.set([base,labels],{opacity:0});
+    lab.textContent='这是字母 A：两条斜边 + 中间一横';
+  }
+
+  start.onclick=()=>{
+    if(tl) tl.kill();
+    tl=gsap.timeline();
+    lab.textContent='两条斜边慢慢张开，中间一横就是它们的夹角…';
+    // 1) 两条斜边张开（对端点数值插值 —— 真实形变）
+    tl.to(legL,{attr:{x2:180,y2:320},duration:1.1,ease:'power2.inOut'},0);
+    tl.to(legR,{attr:{x2:420,y2:320},duration:1.1,ease:'power2.inOut'},0);
+    // 2) 横杠上移并弯成顶角弧（对 path 的 6 个数字插值）
+    const o={t:0};
+    tl.to(o,{t:1,duration:1.1,ease:'power2.inOut',onUpdate:()=>{
+      const v=BAR_A.map((f,i)=>f+(BAR_TRI[i]-f)*o.t);
+      bar.setAttribute('d','M '+v[0]+','+v[1]+' Q '+v[2]+','+v[3]+' '+v[4]+','+v[5]);
+    }},0);
+    // 3) 底边展开 + 标注浮现
+    tl.to(base,{attr:{x1:180,x2:420},opacity:1,duration:0.7,ease:'power2.out'},0.6);
+    tl.to(labels,{opacity:1,duration:0.5},0.9);
+    tl.add(()=>{ lab.textContent='A 张开成了三角形！两条边 + 夹角 ∠A → 这就是 SAS ✅'; });
+  };
+
+  reset.onclick=toA;
+
+  // 错误示例：红叉 + 震动
+  errBtn.onclick=()=>{
+    errX.setAttribute('opacity','1');
+    gsap.fromTo(errA,{x:-6},{x:6,duration:0.08,repeat:7,yoyo:true,ease:'power1.inOut',
+      onComplete:()=>gsap.set(errA,{x:0})});
+  };
+
+  toA();
+})();
+
+/* =========================================================
+   模块3 & 模块5 共用：SSA 数学核心 drawSSA()
+   —— 圆与射线求交，严格几何推导
+=========================================================
+  坐标系约定（SVG，y 轴向下）：
+    A = (Ax, Ay)           固定顶点
+    B = (Ax + c, Ay)       固定底边另一端点，底边 AB 长度 = c
+    射线 AC：从 A 出发、与底边 AB 成 ∠A = α（向上），方向单位向量 d = (cosα, -sinα)
+           射线上任一点 C 可表示为 C = A + t·d ，t ≥ 0 即 AC 的长度
+   条件：|BC| = a （以 B 为圆心、a 为半径的圆）
+
+  将 C 代入圆方程 (Cx-Bx)² + (Cy-By)² = a²：
+    (t·cosα - c)² + (-t·sinα)² = a²
+    t² - 2c·cosα·t + (c² - a²) = 0
+  解得  t = c·cosα ± √(a² - c²sin²α)
+  令判别式 D = a² - c²sin²α
+
+  分类（t 必须 ≥ 0 才是射线上的有效点）：
+    · D < 0      → a < c·sinα        ：无交点 → 0 个三角形
+    · D = 0      → a = c·sinα        ：相切，1 个（此时 BC ⊥ 射线）
+    · D > 0      → 两个解 t₁=c·cosα+√D（恒正），t₂=c·cosα-√D
+                   t₂ ≥ 0 ⇔ a ≤ c ，故
+                   c·sinα < a < c    ：t₁,t₂ 都 ≥0 → 2 个三角形（歧义！正是 SSA 失败的原因）
+                   a ≥ c             ：t₂ < 0 失效，仅 t₁ → 1 个三角形
+========================================================= */
+function drawSSA(svg,opt){
+  const c=opt.c, a=opt.a, alphaDeg=opt.alphaDeg;
+  const showAlt=(opt.showAlt!==false), ticks=!!opt.ticks;
+  svg.innerHTML='';
+  const Ax=120, Ay=370, Bx=Ax+c, By=Ay;
+  const alpha=alphaDeg*Math.PI/180, cosA=Math.cos(alpha), sinA=Math.sin(alpha);
+  const dx=cosA, dy=-sinA;
+
+  // 底边 AB
+  svg.appendChild(svgEl('line',{x1:Ax,y1:Ay,x2:Bx,y2:By,stroke:'#475569','stroke-width':5,'stroke-linecap':'round'}));
+  // 参考垂线：B 到射线的垂足，长度 = c·sinα（直观展示"够不够得着"的阈值）
+  if(showAlt){
+    const fx=Ax+(c*cosA)*cosA, fy=Ay+(c*cosA)*dy;
+    svg.appendChild(svgEl('line',{x1:Bx,y1:By,x2:fx,y2:fy,stroke:'#cbd5e1','stroke-width':2,'stroke-dasharray':'5 5'}));
+    const tAlt=svgEl('text',{x:(Bx+fx)/2+10,y:(By+fy)/2,fill:'#94a3b8','font-size':13});
+    tAlt.textContent='c·sinA='+Math.round(c*sinA); svg.appendChild(tAlt);
+  }
+  // 射线 AC
+  const rayLen=c+320;
+  svg.appendChild(svgEl('line',{x1:Ax,y1:Ay,x2:Ax+dx*rayLen,y2:Ay+dy*rayLen,stroke:'#94a3b8','stroke-width':2,'stroke-dasharray':'8 6'}));
+
+  // —— 求 t 的解（含与几何尺度相关的浮点容差，避免边界误判）——
+  const D=a*a-(c*sinA)*(c*sinA), TOL=1e-6*(c*c), ts=[];
+  if(D>TOL){
+    const root=Math.sqrt(D);
+    const t1=c*cosA+root, t2=c*cosA-root;
+    if(t1>TOL) ts.push(t1);
+    if(t2>TOL) ts.push(t2);
+  }else if(D>=-TOL){
+    const t=c*cosA;
+    if(t>TOL) ts.push(t);
+  }
+
+  // 以 B 为圆心、a 为半径的"上半圆弧"（虚线）
+  // 只画上半：因为射线向上，交点必在上半圆；同时避免大圆溢出画布。
+  if(a>1){
+    svg.appendChild(svgEl('path',{d:'M '+(Bx-a)+','+By+' A '+a+','+a+' 0 0 1 '+(Bx+a)+','+By,
+      fill:'none',stroke:'#4D96FF','stroke-width':2,'stroke-dasharray':'6 6',opacity:.65}));
+  }
+
+  // 三角形 + 交点
+  const colors=['#FF6B6B','#3DBEBA'];
+  ts.forEach((t,i)=>{
+    const Cx=Ax+dx*t, Cy=Ay+dy*t, col=colors[i%2];
+    svg.appendChild(svgEl('polygon',{points:Ax+','+Ay+' '+Bx+','+By+' '+Cx+','+Cy,
+      fill:col,'fill-opacity':0.18,stroke:col,'stroke-width':2}));
+    svg.appendChild(svgEl('line',{x1:Bx,y1:By,x2:Cx,y2:Cy,stroke:col,'stroke-width':6,'stroke-linecap':'round'}));
+    if(ticks) tick(svg,Bx,By,Cx,Cy,2,col);   // BC 上画双刻度 = "长度都是 a"
+    const tC=svgEl('text',{x:Cx+10,y:Cy-8,fill:col,'font-size':18});
+    tC.textContent='C'+(ts.length>1?(i+1):''); svg.appendChild(tC);
+  });
+  // AB 上画单刻度 = "长度都是 c"（两个三角形共用）
+  if(ticks && ts.length>0) tick(svg,Ax,Ay,Bx,By,1,'#475569');
+
+  // 顶点标签（最后画，保证在上层）
+  const tA=svgEl('text',{x:Ax-20,y:Ay+26,fill:'#475569','font-size':20}); tA.textContent='A'; svg.appendChild(tA);
+  const tB=svgEl('text',{x:Bx+8,y:Ay+26,fill:'#475569','font-size':20}); tB.textContent='B'; svg.appendChild(tB);
+
+  return ts.length;   // 返回解的个数 = 可构成的三角形数
+}
+
+/* =========================================================
+   模块3：SSA 实验室
+   —— 拖动滑块时用 requestAnimationFrame 节流，避免 iPad 上掉帧
+========================================================= */
+(function initSSA(){
+  const svg=$('ssaSvg'), slider=$('aSlider'), aVal=$('aVal'), msg=$('ssaMsg'), reset=$('ssaReset');
+  const C=220, THRESH=Math.round(C*Math.sin(30*Math.PI/180));  // c·sinA = 110
+  let raf=null;
+
+  function render(){
+    raf=null;
+    const a=+slider.value; aVal.textContent=a;
+    const n=drawSSA(svg,{c:C,a:a,alphaDeg:30,ticks:true});
+    if(n===0){
+      msg.style.background='#ffeef0'; msg.style.color='#c0392b';
+      msg.innerHTML='😵 <b>无解！</b><br>a &lt; c·sinA（'+THRESH+'）：圆够不着射线，连三角形都画不出来。';
+    }else if(n===2){
+      msg.style.background='#fff7e6'; msg.style.color='#8a6100';
+      msg.innerHTML='🎉 <b>看！满足 SSA，却画出两个不一样的三角形！</b>'+
+        '<table class="cmptbl"><tr><th>条件</th><th>△ABC₁</th><th>△ABC₂</th></tr>'+
+        '<tr><td>AB</td><td>220</td><td>220</td></tr>'+
+        '<tr><td>∠A</td><td>30°</td><td>30°</td></tr>'+
+        '<tr><td>BC</td><td>'+a+'</td><td>'+a+'</td></tr></table>'+
+        '<div class="mt-2">三组条件<b>完全相同</b>，三角形却<b>不一样</b> → 所以 SSA 不能判定全等！</div>';
+    }else{
+      msg.style.background='#e9fbf0'; msg.style.color='#1d7a4d';
+      msg.innerHTML='✅ <b>现在只有 1 个三角形。</b><br>a ≥ c(220) 时虽唯一，但这只是"刚好够长"，SSA 作为通用定理仍不成立（只对直角特例成立，见模块⑤）。';
+    }
+  }
+  function schedule(){ if(!raf) raf=requestAnimationFrame(render); }
+
+  slider.oninput=schedule;
+  reset.onclick=()=>{ slider.value=160; schedule(); };
+  render();
+})();
+
+/* =========================================================
+   模块5 上半：HL 演变（复用 drawSSA，角度 + 边长双滑块）
+========================================================= */
+(function initHL(){
+  const svg=$('hlSvg'), aSlider=$('aSlider2'), aVal=$('aVal2');
+  const degSlider=$('alphaSlider'), degVal=$('alphaVal');
+  const msg=$('hlMsg'), preset=$('hlPreset');
+  const C=220;
+  let raf=null;
+
+  function render(){
+    raf=null;
+    const a=+aSlider.value, deg=+degSlider.value;
+    aVal.textContent=a; degVal.textContent=deg;
+    const n=drawSSA(svg,{c:C,a:a,alphaDeg:deg});
+    const isRight=deg>=90;
+    if(n===2){
+      msg.style.background='#fff7e6'; msg.style.color='#8a6100';
+      msg.innerHTML='⚠️ <b>还是两个三角形（歧义）！</b><br>继续把 ∠A 往 90° 拖，看这两个交点如何合并、消失。';
+    }else if(n===1 && isRight){
+      msg.style.background='#e9fbf0'; msg.style.color='#1d7a4d';
+      msg.innerHTML='🏆 <b>∠A=90° 且只剩 1 个解 → 这正是 HL！</b><br>直角三角形里，斜边 + 一条直角边确定唯一三角形，SSA 这才成立。';
+    }else if(n===1){
+      msg.style.background='#e9fbf0'; msg.style.color='#1d7a4d';
+      msg.innerHTML='✅ 当前只有 1 个解（a ≥ c，已脱离歧义区）。';
+    }else{
+      msg.style.background='#ffeef0'; msg.style.color='#c0392b';
+      msg.innerHTML=(isRight
+        ? '😵 ∠A=90° 但 a 还不够长（需 a &gt; 220）：直角边太短，够不着射线。把 a 调大些。'
+        : '😵 无解：a &lt; c·sinA，圆够不着射线。把 a 调大些试试。');
+    }
+  }
+  function schedule(){ if(!raf) raf=requestAnimationFrame(render); }
+
+  aSlider.oninput=schedule;
+  degSlider.oninput=schedule;
+  preset.onclick=()=>{ aSlider.value=260; degSlider.value=90; schedule(); };
+  render();
+})();
+
+/* =========================================================
+   模块4：ASA / AAS —— 角标 + "透视本质"
+========================================================= */
+(function initAAS(){
+  // 这个三角形三个角约为 55° / 65° / 60°（和为 180°）
+  const A=[55,205], B=[235,205], Cpt=[163,50];
+
+  // 左：ASA —— 标出 ∠A 与 ∠B（它们夹着底边）
+  angleMark($('asaMarks'),A,B,Cpt,34,'#4D96FF','∠A=55°',86,180);
+  angleMark($('asaMarks'),B,A,Cpt,34,'#FF6B6B','∠B=65°',206,180);
+
+  // 右：AAS —— 同样标出 ∠A、∠B；∠C 留作"揭示"
+  angleMark($('aasMarks'),A,B,Cpt,34,'#4D96FF','∠A=55°',86,180);
+  angleMark($('aasMarks'),B,A,Cpt,34,'#FF6B6B','∠B=65°',206,180);
+  // 预先把 ∠C 的角弧算好（默认隐藏，点击后淡入）
+  $('aasArcC').setAttribute('d',arcD(Cpt,B,A,34));
+
+  const third=$('aasThird'), btn=$('aasBtn'), explain=$('aasExplain');
+  let shown=false;
+  btn.onclick=()=>{
+    shown=!shown;
+    gsap.to(third,{opacity:shown?1:0,duration:0.6});
+    explain.classList.toggle('hidden',!shown);
+    btn.textContent=shown?'🔍 收起本质':'🔍 透视本质';
+  };
+})();
+
+/* =========================================================
+   模块5 下半：全等变换三件套（平移 / 翻折 / 旋转）
+   —— 用不等边三角形，三种变换各自"数学精确"地重合：
+      · 平移：把 T2 沿向量 V 平移回 T1
+      · 翻折：T2 = T1 关于竖直线 x=MX 的镜像；
+              对 T2 做 scaleX:-1（枢轴 svgOrigin=MX）即镜像回 T1
+      · 旋转：T2 = T1 绕 PIV 顺时针 TH 度后的位置；
+              对 T2 做 rotation:-TH（枢轴 svgOrigin=PIV）即转回 T1
+   —— 关键：旋转/缩放必须给出正确的 svgOrigin（枢轴），
+      否则会绕画布原点 (0,0) 转动而"飞出屏幕"。
+========================================================= */
+(function initXF(){
+  const t2=$('xfT2'), poly=$('xfT2Poly'), reset=$('xfReset'), tip=$('xfTip');
+  const aux={arrow:$('xfArrow'), axis:$('xfAxis'), pivot:$('xfPivot')};
+  const T1POS=[170,120], T1L=[[-60,-45],[65,-20],[5,65]];
+  const T1ABS=T1L.map(function(p){return [T1POS[0]+p[0],T1POS[1]+p[1]];});  // [[110,75],[235,100],[175,185]]
+  const V=[230,30];        // 平移向量
+  const MX=340;            // 翻折轴 x = 340
+  const PIV=[310,250];     // 旋转中心
+  const TH=120;            // 旋转角度（顺时针为正）
+  let tw=null;
+
+  function rot(p,c,deg){
+    const a=deg*Math.PI/180, cs=Math.cos(a), sn=Math.sin(a);
+    const dx=p[0]-c[0], dy=p[1]-c[1];
+    return [c[0]+dx*cs-dy*sn, c[1]+dx*sn+dy*cs];
+  }
+  function toPts(arr){
+    return arr.map(function(p){return p[0].toFixed(2)+','+p[1].toFixed(2);}).join(' ');
+  }
+  function showAux(which){
+    for(const k in aux) gsap.to(aux[k],{opacity:(k===which?1:0),duration:0.3});
+  }
+  // 复位：回到"平移"的分离起点
+  function resetAll(){
+    if(tw) tw.kill();
+    gsap.set(t2,{x:0,y:0,rotation:0,scaleX:1,scaleY:1});
+    poly.setAttribute('points',toPts(T1ABS.map(function(p){return [p[0]+V[0],p[1]+V[1]];})));
+    for(const k in aux) gsap.to(aux[k],{opacity:0,duration:0.2});
+    tip.textContent='当前：三个三角形初始分离。点任意按钮开始。';
+  }
+  function play(type){
+    if(tw) tw.kill();
+    gsap.set(t2,{x:0,y:0,rotation:0,scaleX:1,scaleY:1});   // 先清掉上一次的变换
+    if(type==='move'){
+      poly.setAttribute('points',toPts(T1ABS.map(function(p){return [p[0]+V[0],p[1]+V[1]];})));
+      showAux('arrow');
+      tip.textContent='平移：整条轨迹是一条直线，方向、朝向都不变。';
+      tw=gsap.to(t2,{x:-V[0],y:-V[1],duration:1.3,ease:'power2.inOut'});
+    }else if(type==='flip'){
+      poly.setAttribute('points',toPts(T1ABS.map(function(p){return [2*MX-p[0],p[1]];})));  // 关于 x=MX 镜像后的位置
+      showAux('axis');
+      tip.textContent='翻折：三角形沿着对称轴"翻"过去，左右手互换。';
+      tw=gsap.to(t2,{scaleX:-1,duration:1.3,ease:'power2.inOut',svgOrigin:MX+' 0'});
+    }else{
+      poly.setAttribute('points',toPts(T1ABS.map(function(p){return rot(p,PIV,TH);})));       // 绕 PIV 顺时针转 TH 后的位置
+      showAux('pivot');
+      tip.textContent='旋转：整个三角形绕着紫色中心点转动。';
+      tw=gsap.to(t2,{rotation:-TH,duration:1.3,ease:'power2.inOut',svgOrigin:PIV[0]+' '+PIV[1]});
+    }
+  }
+  document.querySelectorAll('.xfBtn').forEach(function(b){ b.onclick=function(){ play(b.dataset.xf); }; });
+  reset.onclick=resetAll;
+  resetAll();
+})();
+
+/* =========================================================
+   导航高亮：滚动到哪个模块，顶部对应标签就变蓝
+========================================================= */
+(function initNav(){
+  const links=[].slice.call(document.querySelectorAll('.nav-link'));
+  const map={}; links.forEach(function(a){ map[a.getAttribute('href').slice(1)]=a; });
+  const secs=[].slice.call(document.querySelectorAll('section[id]'));
+  if(!('IntersectionObserver' in window)) return;
+  const io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){ l.classList.remove('active'); });
+        const a=map[e.target.id]; if(a) a.classList.add('active');
+      }
+    });
+  },{rootMargin:'-45% 0px -50% 0px',threshold:0});
+  secs.forEach(function(s){ io.observe(s); });
+})();
+
+/* =========================================================
+   互动三角形沙盘：自由拖拽顶点，实时显示边 / 角 / 分类
+   （来自 v1 的精华模块，移植进融合版）
+========================================================= */
+(function initPlayground(){
+  const svg = document.getElementById('pgSvg');
+  const VB = {w:600, h:420};
+  const M = 42;                 // 顶点离画布边缘的最小距离，避免拖出界
+  const SCALE = 50;             // 50px 折算为 1 个"单位长度"
+  // 默认三角形（viewBox 坐标）
+  const DEF = { A:{x:150,y:330}, B:{x:450,y:330}, C:{x:300,y:110} };
+  let P = JSON.parse(JSON.stringify(DEF));
+
+  const $ = id => document.getElementById(id);
+  const E = {
+    AB:$('pgAB'), BC:$('pgBC'), CA:$('pgCA'),
+    arcA:$('pgArcA'), arcB:$('pgArcB'), arcC:$('pgArcC'),
+    lenC:$('pgLenC'), lenA:$('pgLenA'), lenB:$('pgLenB'),
+    angA:$('pgAngA'), angB:$('pgAngB'), angC:$('pgAngC'),
+    A:$('pgA'), B:$('pgB'), C:$('pgC'),
+    labA:$('pgLabA'), labB:$('pgLabB'), labC:$('pgLabC'),
+    va:$('pgVa'), vb:$('pgVb'), vc:$('pgVc'),
+    degA:$('pgDegA'), degB:$('pgDegB'), degC:$('pgDegC'),
+    type:$('pgType'), pa:$('pgPA')
+  };
+
+  const dist = (p,q)=>Math.hypot(p.x-q.x, p.y-q.y);
+  const mid  = (p,q)=>({x:(p.x+q.x)/2, y:(p.y+q.y)/2});
+
+  // 求点 A 处由射线 AB、AC 构成的角（余弦定理，返回角度制）
+  function angleAt(A,B,C){
+    const v1={x:B.x-A.x, y:B.y-A.y}, v2={x:C.x-A.x, y:C.y-A.y};
+    const dot = v1.x*v2.x + v1.y*v2.y;
+    const m   = Math.hypot(v1.x,v1.y)*Math.hypot(v2.x,v2.y) || 1;
+    let cos = dot/m; cos = Math.max(-1, Math.min(1, cos));
+    return Math.acos(cos)*180/Math.PI;
+  }
+
+  // 在 center 处、从 p1 指向 p2 的真实夹角方向画一段弧（半径 r）
+  function arcPath(center,p1,p2,r){
+    const a1 = Math.atan2(p1.y-center.y, p1.x-center.x);
+    let   a2 = Math.atan2(p2.y-center.y, p2.x-center.x);
+    let da = a2-a1;
+    while(da >  Math.PI) da -= 2*Math.PI;
+    while(da < -Math.PI) da += 2*Math.PI;
+    const n = 18; let d = '';
+    for(let i=0;i<=n;i++){
+      const a = a1 + da*i/n;
+      const x = center.x + r*Math.cos(a);
+      const y = center.y + r*Math.sin(a);
+      d += (i?'L':'M') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    }
+    return d;
+  }
+
+  function render(){
+    const {A,B,C} = P;
+    // 边
+    E.AB.setAttribute('x1',A.x); E.AB.setAttribute('y1',A.y); E.AB.setAttribute('x2',B.x); E.AB.setAttribute('y2',B.y);
+    E.BC.setAttribute('x1',B.x); E.BC.setAttribute('y1',B.y); E.BC.setAttribute('x2',C.x); E.BC.setAttribute('y2',C.y);
+    E.CA.setAttribute('x1',C.x); E.CA.setAttribute('y1',C.y); E.CA.setAttribute('x2',A.x); E.CA.setAttribute('y2',A.y);
+    // 顶点 + 字母
+    [['A',E.A,E.labA],['B',E.B,E.labB],['C',E.C,E.labC]].forEach(([k,circle,lab])=>{
+      const pt = P[k];
+      circle.setAttribute('cx',pt.x); circle.setAttribute('cy',pt.y);
+      lab.setAttribute('x',pt.x); lab.setAttribute('y',pt.y+6); lab.textContent = k;
+    });
+    // 边长（贴边中点）
+    const a = dist(B,C), b = dist(C,A), c = dist(A,B);
+    const mBC = mid(B,C), mCA = mid(C,A), mAB = mid(A,B);
+    E.lenA.setAttribute('x',mBC.x); E.lenA.setAttribute('y',mBC.y-8); E.lenA.textContent=(a/SCALE).toFixed(1);
+    E.lenB.setAttribute('x',mCA.x); E.lenB.setAttribute('y',mCA.y-8); E.lenB.textContent=(b/SCALE).toFixed(1);
+    E.lenC.setAttribute('x',mAB.x); E.lenC.setAttribute('y',mAB.y+22); E.lenC.textContent=(c/SCALE).toFixed(1);
+    // 角度（弧 + 数值标签，数值朝三角形重心方向偏移）
+    const Adeg = angleAt(A,B,C), Bdeg = angleAt(B,A,C), Cdeg = angleAt(C,A,B);
+    E.arcA.setAttribute('d', arcPath(A,B,C,34));
+    E.arcB.setAttribute('d', arcPath(B,A,C,34));
+    E.arcC.setAttribute('d', arcPath(C,A,B,34));
+    const cen = {x:(A.x+B.x+C.x)/3, y:(A.y+B.y+C.y)/3};
+    const place = (V)=>{
+      const k = Math.hypot(cen.x-V.x, cen.y-V.y) || 1;
+      return {x: V.x + (cen.x-V.x)/k*46, y: V.y + (cen.y-V.y)/k*46};
+    };
+    let p = place(A); E.angA.setAttribute('x',p.x); E.angA.setAttribute('y',p.y); E.angA.textContent = Adeg.toFixed(0)+'°';
+    p = place(B);     E.angB.setAttribute('x',p.x); E.angB.setAttribute('y',p.y); E.angB.textContent = Bdeg.toFixed(0)+'°';
+    p = place(C);     E.angC.setAttribute('x',p.x); E.angC.setAttribute('y',p.y); E.angC.textContent = Cdeg.toFixed(0)+'°';
+    // 数据面板
+    E.va.textContent=(a/SCALE).toFixed(1); E.vb.textContent=(b/SCALE).toFixed(1); E.vc.textContent=(c/SCALE).toFixed(1);
+    E.degA.textContent=Adeg.toFixed(0)+'°'; E.degB.textContent=Bdeg.toFixed(0)+'°'; E.degC.textContent=Cdeg.toFixed(0)+'°';
+    // 分类（以"单位长度"为基准的绝对容差，避免浮点抖动与误判）
+    const ua=a/SCALE, ub=b/SCALE, uc=c/SCALE;     // 折算成单位长度
+    const TOL=0.15;                                // 边长差 < 0.15 单位视为"相等"
+    const eqU=(x,y)=>Math.abs(x-y) <= TOL;
+    const near90 = d=>Math.abs(d-90) < 1.2;
+    const right  = near90(Adeg)||near90(Bdeg)||near90(Cdeg);
+    const obtuse = Adeg>90.5 || Bdeg>90.5 || Cdeg>90.5;
+    let t;
+    if(eqU(ua,ub)&&eqU(ub,uc))      t='⭐ 等边三角形';
+    else if(right)            t='📐 直角三角形';
+    else if(obtuse)           t='🔻 钝角三角形';
+    else if(eqU(ua,ub)||eqU(ub,uc)||eqU(ua,uc)) t='🔺 等腰三角形';
+    else                      t='🔺 锐角三角形';
+    E.type.textContent = t;
+    // 周长 / 面积（海伦公式，单位已折算）
+    const peri = (a+b+c)/SCALE;
+    const s = peri/2;
+    const area = Math.sqrt(Math.max(0, s*(s-a/SCALE)*(s-b/SCALE)*(s-c/SCALE)));
+    E.pa.textContent = peri.toFixed(1)+' / '+area.toFixed(1);
+  }
+
+  // ===== 拖拽（Pointer 事件：一套代码同时支持鼠标与触摸）=====
+  let drag = null;
+  function toSVG(evt){
+    const pt = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    const m = svg.getScreenCTM().inverse();
+    const q = pt.matrixTransform(m);
+    return {x:q.x, y:q.y};
+  }
+  function onDown(evt){
+    const id = evt.target.id;
+    if(id==='pgA'||id==='pgB'||id==='pgC'){
+      drag = id;                       // 'pgA' -> 取第3个字符 'A'
+      if(evt.target.setPointerCapture) evt.target.setPointerCapture(evt.pointerId);
+      evt.preventDefault();
+    }
+  }
+  function onMove(evt){
+    if(!drag) return;
+    const p = toSVG(evt);
+    p.x = Math.max(M, Math.min(VB.w-M, p.x));
+    p.y = Math.max(M, Math.min(VB.h-M, p.y));
+    P[drag.charAt(2)] = p;
+    render();
+    evt.preventDefault();
+  }
+  function onUp(){ drag = null; }
+  svg.addEventListener('pointerdown', onDown);
+  svg.addEventListener('pointermove', onMove);
+  svg.addEventListener('pointerup',   onUp);
+  svg.addEventListener('pointercancel', onUp);
+
+  $('pgReset').onclick = ()=>{ P = JSON.parse(JSON.stringify(DEF)); render(); };
+
+  render();   // 首屏绘制
+})();
+</script>
 </body>
 </html>
