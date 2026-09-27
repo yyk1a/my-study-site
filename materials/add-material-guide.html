@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>如何添加新资料 · 资料站使用指南</title>
+<meta name="description" content="三步把新资料挂上资料站：准备内容页、在首页复制卡片改标题/链接/说明、重新发布。含真实卡片代码与常见坑。">
+<style>
+  :root{
+    --ink:#24292f; --muted:#57606a; --line:#d0d7de; --bg:#ffffff;
+    --soft:#f6f8fa; --accent:#0969da; --accent-soft:#ddf4ff;
+    --warn-bg:#fff8c5; --warn-line:#d4a72c; --ok:#1a7f37;
+    --code-bg:#f6f8fa; --pre-bg:#0d1117; --pre-ink:#e6edf3;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; color:var(--ink); background:var(--soft);
+    font-family:"PingFang SC","Microsoft YaHei",-apple-system,"Segoe UI",system-ui,sans-serif;
+    line-height:1.75; font-size:16px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px;}
+
+  /* ===== 顶栏 ===== */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar .wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px;}
+  .brand{font-weight:800;font-size:18px;white-space:nowrap;}
+  .brand small{display:block;font-weight:500;color:var(--muted);font-size:12px;}
+  .tabs{display:flex;gap:8px;margin-left:auto;align-items:center;}
+  .tab{
+    border:1px solid var(--line);background:#fff;color:var(--ink);
+    padding:8px 16px;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;
+    transition:all .15s ease;
+  }
+  .tab:hover{border-color:var(--accent);color:var(--accent);}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(9,105,218,.35);}
+  .backlink{font-size:14px;font-weight:700;color:var(--accent);text-decoration:none;}
+
+  /* ===== 布局：侧目录 + 正文 ===== */
+  main.wrap{display:grid;grid-template-columns:230px minmax(0,1fr);gap:28px;padding-top:28px;padding-bottom:60px;}
+  .toc{position:sticky;top:76px;align-self:start;max-height:calc(100vh - 96px);overflow:auto;
+    background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+  .toc h4{margin:0 0 8px;font-size:13px;color:var(--muted);letter-spacing:.08em;}
+  .toc a{display:block;color:var(--muted);text-decoration:none;font-size:13.5px;
+    padding:5px 10px;border-radius:8px;border-left:3px solid transparent;}
+  .toc a:hover{background:var(--soft);color:var(--ink);}
+  .toc a.on{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:700;}
+
+  /* ===== 文档卡片 ===== */
+  .doc{display:block;background:var(--bg);border:1px solid var(--line);border-radius:14px;
+    padding:34px 42px;box-shadow:0 1px 3px rgba(27,31,36,.06);}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .doc h1{font-size:26px;line-height:1.35;margin:0 0 6px;padding-bottom:14px;border-bottom:1px solid var(--line);}
+  .doc .meta{color:var(--muted);font-size:14px;margin-bottom:20px;}
+  .doc h2{font-size:21px;margin:38px 0 12px;padding:6px 0 6px 12px;border-left:5px solid var(--accent);background:linear-gradient(90deg,var(--accent-soft),transparent 70%);border-radius:0 8px 8px 0;scroll-margin-top:80px;}
+  .doc h3{font-size:17px;margin:24px 0 8px;scroll-margin-top:80px;}
+  .doc p{margin:10px 0;}
+  .doc ul{margin:8px 0;padding-left:24px;}
+  .doc li{margin:4px 0;}
+  .doc b{font-weight:700;}
+  hr{border:none;border-top:1px dashed var(--line);margin:26px 0;}
+
+  /* 行内代码 */
+  code{
+    font-family:"Cascadia Code",Consolas,"JetBrains Mono",monospace;
+    background:var(--code-bg);border:1px solid var(--line);border-radius:6px;
+    padding:1px 6px;font-size:.88em;color:#cf222e;white-space:nowrap;
+  }
+  /* 代码块 */
+  pre{
+    background:var(--pre-bg);color:var(--pre-ink);border-radius:10px;
+    padding:14px 18px;overflow:auto;font-size:14px;line-height:1.65;margin:12px 0;
+  }
+  pre code{background:none;border:none;padding:0;color:inherit;white-space:pre;font-size:inherit;}
+  pre .cm{color:#8b949e;} /* 注释 */
+
+  /* 引用块 */
+  blockquote{
+    margin:14px 0;padding:10px 16px;background:var(--soft);
+    border-left:4px solid var(--line);border-radius:0 8px 8px 0;color:var(--muted);
+  }
+  blockquote p{margin:6px 0;}
+  blockquote.warn{background:var(--warn-bg);border-left-color:var(--warn-line);color:#6b5300;}
+  blockquote.ok{background:#dafbe1;border-left-color:var(--ok);color:#0f5323;}
+
+  /* 表格 */
+  .tbl{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:10px;}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;}
+  th,td{border:1px solid var(--line);padding:8px 14px;text-align:left;vertical-align:top;}
+  th{background:var(--soft);font-weight:700;white-space:nowrap;}
+  tr:nth-child(even) td{background:#fbfcfd;}
+  td code,th code{white-space:normal;word-break:break-all;}
+
+  .pill{display:inline-block;background:var(--accent-soft);color:var(--accent);
+    border-radius:999px;padding:1px 10px;font-size:12.5px;font-weight:700;margin-right:6px;}
+  .step{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+    background:var(--accent);color:#fff;border-radius:50%;font-size:14px;font-weight:700;margin-right:8px;}
+
+  footer{border-top:1px solid var(--line);background:#fff;color:var(--muted);
+    text-align:center;font-size:13px;padding:22px 16px;}
+
+  @media (max-width:900px){
+    main.wrap{grid-template-columns:1fr;}
+    .toc{position:static;max-height:none;}
+    .doc{padding:22px 18px;}
+    .tabs{margin-left:0;}
+  }
+  @media print{
+    .topbar,.toc,footer{display:none;}
+    main.wrap{display:block;}
+    .doc{display:block;border:none;box-shadow:none;padding:0;}
+  }
+</style>
+</head>
+<body>
+
+  <!-- 顶栏：固定粘性导航 -->
+  <header class="topbar">
+    <div class="wrap">
+      <div class="brand">我的资料站 · 使用指南<small>如何添加新资料</small></div>
+      <nav class="tabs">
+        <a class="backlink" href="../index.html">← 返回资料目录</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 主体：左侧目录 + 右侧文档 -->
+  <main class="wrap">
+
+    <!-- 侧边目录 -->
+    <aside class="toc" id="toc">
+      <h4>本页目录</h4>
+      <a href="#overview">概览：到底要做几件事</a>
+      <a href="#step1">第 1 步：准备内容页</a>
+      <a href="#step2">第 2 步：复制一张卡片</a>
+      <a href="#cardmap">卡片各部分含义</a>
+      <a href="#badge">颜色标签怎么选</a>
+      <a href="#step3">第 3 步：重新发布</a>
+      <a href="#pitfalls">常见坑 / 检查清单</a>
+      <a href="#lazy">懒人方案</a>
+    </aside>
+
+    <!-- 文档 -->
+    <article class="doc" id="doc-guide">
+      <h1>如何添加新资料 · 资料站使用指南</h1>
+      <p class="meta">更新于 2026-09-27 · 适用站点 yyk1a.github.io/my-study-site · 约 16 KB</p>
+
+      <h2 id="overview">概览：到底要做几件事</h2>
+      <p>想往资料站里加一份新资料，本质上只做 <b>两件事</b>，但发布前会拆成三步：</p>
+      <ul>
+        <li><span class="step">1</span><b>准备内容页</b>：把新资料做成一个自包含 HTML 文件，放进 <code>materials/</code> 文件夹。</li>
+        <li><span class="step">2</span><b>在首页挂入口</b>：在根目录 <code>index.html</code> 的 <code>&lt;div class="grid"&gt;</code> 里复制一张 <code>.card</code>，改成新资料的标题、链接和说明。</li>
+        <li><span class="step">3</span><b>重新发布</b>：把改动推送到 GitHub（或网页上传），GitHub Pages 自动更新生效。</li>
+      </ul>
+      <blockquote class="warn"><b>关键提醒：</b>“复制卡片”只是给首页加一个<b>入口/封面</b>，并不会凭空生成内容页。第 1 步的内容页必须自己先准备好（或让我帮你生成）。两者缺一，点卡片就会 404。</blockquote>
+
+      <h2 id="step1">第 1 步：准备内容页</h2>
+      <p>在仓库根目录的 <code>materials/</code> 文件夹里，新建一个 <code>.html</code> 文件。例如 <code>python-venv.html</code>。</p>
+      <h3>命名规则</h3>
+      <ul>
+        <li>用<b>简短英文小写</b>，单词间用连字符 <code>-</code>，例如 <code>ws63.html</code>、<code>triangle-congruence.html</code>。</li>
+        <li>别用中文文件名、空格或特殊符号，否则链接容易出乱码。</li>
+      </ul>
+      <h3>内容页的要求</h3>
+      <ul>
+        <li><b>自包含</b>：CSS / JS 全部内联在文件里，<b>不要引用任何外部 CDN</b>（你的网络访问 CDN 不稳定，且 Pages 打开必须“不缺格式”）。</li>
+        <li>中文排版、移动端自适应、浅色主题。</li>
+        <li>不确定怎么写？直接参考已有的 <code>materials/ws63.html</code> 的样式，照着它的结构填内容即可；或者把资料发给我，我帮你生成。</li>
+      </ul>
+
+      <h2 id="step2">第 2 步：复制一张卡片</h2>
+      <p>打开根目录的 <code>index.html</code>，找到这一块（它就是首页那排卡片的容器）：</p>
+      <pre><code><span class="cm">&lt;!-- 卡片容器：里面每个 &lt;a class="card"&gt; 就是一张卡片 --&gt;</span>
+&lt;div class="grid"&gt;
+  &lt;a class="card" href="materials/ws63.html"&gt;
+    &lt;span class="badge b-dev"&gt;嵌入式 · 星闪&lt;/span&gt;
+    &lt;h3&gt;WS63 实操手册 · 环境搭建 + 编译烧录&lt;/h3&gt;
+    &lt;p&gt;WSL + VSCode + Ubuntu 下 WS63 SparkLink 开发……&lt;/p&gt;
+    &lt;div class="meta"&gt;更新于 2026-09-27 · 约 24 KB&lt;/div&gt;
+  &lt;/a&gt;
+  <span class="cm">/* 其它卡片 … */</span>
+&lt;/div&gt;</code></pre>
+
+      <p><b>“复制一张 .card，改标题、链接和说明”就是：</b></p>
+      <ul>
+        <li>把上面整段 <code>&lt;a class="card"&gt; … &lt;/a&gt;</code> 原样再粘贴一份，<b>放在 <code>&lt;div class="grid"&gt;</code> 里面、和其他卡片平级</b>；</li>
+        <li>然后只改三处（见下方对照）；</li>
+        <li>顺手把顶部“目前收录 N 份”的数字 +1。</li>
+      </ul>
+
+      <h3>改之前 vs 改之后（以新增 python-venv.html 为例）</h3>
+      <p>新增的卡片长这样（注意三处变化已用注释标出）：</p>
+      <pre><code><span class="cm">&lt;!-- 新增卡片：复制自上面那张，只改了三处 --&gt;</span>
+&lt;a class="card" href="materials/python-venv.html"&gt;   <span class="cm">① 链接：指向新文件</span>
+  &lt;span class="badge b-dev"&gt;Python · 环境&lt;/span&gt;      <span class="cm">② 标签文字（颜色类可换，见下文）</span>
+  &lt;h3&gt;Python venv 虚拟环境速查&lt;/h3&gt;                <span class="cm">③ 标题</span>
+  &lt;p&gt;PEP 668 报错怎么办、venv 创建与激活、依赖导出与复现，一篇讲清。&lt;/p&gt;  <span class="cm">④ 说明</span>
+  &lt;div class="meta"&gt;更新于 2026-09-27 · 约 12 KB&lt;/div&gt;
+&lt;/a&gt;</code></pre>
+      <blockquote class="ok"><b>一句话记住：</b>整张卡就是一个 <code>&lt;a&gt;</code> 链接，点哪里都跳到 <code>href</code> 指向的 <code>materials/xxx.html</code>。你复制出来要改的就是 <code>href</code>、<code>&lt;h3&gt;</code> 文字、<code>&lt;p&gt;</code> 文字这三处。</blockquote>
+
+      <h2 id="cardmap">卡片各部分含义</h2>
+      <div class="tbl"><table>
+        <tr><th>代码</th><th>页面上长什么样</th><th>你要改吗</th></tr>
+        <tr><td><code>href="materials/..."</code></td><td>点击卡片跳去的地址</td><td>✅ 必须改（第 1 步的文件名）</td></tr>
+        <tr><td><code>&lt;span class="badge b-dev"&gt;</code></td><td>左上角彩色分类小标签</td><td>建议改文字；颜色类三选一</td></tr>
+        <tr><td><code>&lt;h3&gt;</code></td><td>卡片大标题</td><td>✅ 改</td></tr>
+        <tr><td><code>&lt;p&gt;</code></td><td>灰色说明文字</td><td>✅ 改</td></tr>
+        <tr><td><code>&lt;div class="meta"&gt;</code></td><td>底部“更新于…·约 XX KB”</td><td>建议顺手改日期 / 大小</td></tr>
+      </table></div>
+
+      <h2 id="badge">颜色标签怎么选</h2>
+      <p>左上角那个小标签的颜色，由 <code>badge</code> 后面跟的颜色类决定。目前站点内置三色，直接复用即可：</p>
+      <div class="tbl"><table>
+        <tr><th>类名</th><th>颜色</th><th>适合场景</th></tr>
+        <tr><td><code>b-math</code></td><td>绿色</td><td>数学 / 理科类</td></tr>
+        <tr><td><code>b-sec</code></td><td>橙色</td><td>信息安全 / 通用</td></tr>
+        <tr><td><code>b-dev</code></td><td>蓝色</td><td>开发 / 工程 / 技术</td></tr>
+        <tr><td><code>b-guide</code></td><td>紫色</td><td>本指南这类“站点 / 帮助”页（已随本页新增）</td></tr>
+      </table></div>
+      <blockquote><b>想加第 5 种颜色？</b>在 <code>index.html</code> 的 <code>&lt;style&gt;</code> 里加一条 <code>.b-xxx { background: var(--purple); }</code>（用 <code>:root</code> 里已有的变量色），再把卡片上的类换成 <code>b-xxx</code> 即可。</blockquote>
+
+      <h2 id="step3">第 3 步：重新发布</h2>
+      <p>改完 <code>materials/</code> 里的新文件和 <code>index.html</code> 后，让改动上线有两种方式：</p>
+      <h3>方式 A：命令行（git）</h3>
+      <pre><code>git add index.html materials/你的新文件.html
+git commit -m "add: 新增 XXX 资料"
+git push</code></pre>
+      <h3>方式 B：GitHub 网页上传（本机命令行连不上 GitHub 时的首选）</h3>
+      <ul>
+        <li>浏览器打开 <code>https://github.com/yyk1a/my-study-site</code>；</li>
+        <li><b>Add file → Upload files</b>，把改好的 <code>index.html</code> 和整个 <code>materials</code> 文件夹一起拖进去（首页覆盖属预期）；</li>
+        <li>点 <b>Commit changes</b>，等 <b>1~2 分钟</b>；</li>
+        <li>访问 <code>https://yyk1a.github.io/my-study-site/materials/你的新文件.html</code> 验证，首页按 <b>Ctrl+F5</b> 强刷看新卡片。</li>
+      </ul>
+
+      <h2 id="pitfalls">常见坑 / 检查清单</h2>
+      <ul>
+        <li>✅ <b>href 路径要写对</b>：卡片在根目录 <code>index.html</code> 里，所以链接要写 <code>materials/你的文件.html</code>（相对路径），别写成 <code>/materials/...</code> 或绝对路径。</li>
+        <li>✅ <b>代码片段里的 <code>&lt;</code> <code>&gt;</code> <code>&amp;</code> 要转义</b>：如果在卡片说明或页面里贴 HTML 示例，必须把 <code>&lt;</code> 写成 <code>&amp;lt;</code>、<code>&gt;</code> 写成 <code>&amp;gt;</code>、<code>&amp;</code> 写成 <code>&amp;amp;</code>，否则浏览器会把它们当标签吃掉。</li>
+        <li>✅ <b>别忘了把“目前收录 N 份”+1</b>，否则数量和卡片数对不上。</li>
+        <li>✅ <b>内容页和卡片都要传</b>：只传首页 → 卡片 404；只传内容页 → 首页看不到入口。</li>
+        <li>✅ <b>等 1~2 分钟 + 强刷</b>：GitHub Pages 不是实时生效，且浏览器会缓存，务必 Ctrl+F5。</li>
+      </ul>
+
+      <h2 id="lazy">懒人方案</h2>
+      <blockquote class="ok">把资料（md / 笔记 / 直接说的话）发给我，告诉我想要的<b>标题</b>和<b>一句说明</b>，我直接帮你：生成 <code>materials/</code> 内容页 + 改好首页卡片 + 产出上传包，你只要去 GitHub 网页点一下上传就行。</blockquote>
+      <hr>
+      <p style="color:var(--muted);font-size:14px;">本指南本身也是一份资料页，已通过首页“站点 · 指南”紫色卡片接入资料站。</p>
+    </article>
+
+  </main>
+
+  <footer>
+    个人学习资料库 · 托管于 GitHub Pages · 使用指南页
+  </footer>
+
+  <script>
+    // 目录高亮：滚动到哪个章节，左侧对应链接变高亮
+    const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+    const targets = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+    function onScroll(){
+      let cur = targets[0];
+      for(const t of targets){ if(t.getBoundingClientRect().top <= 90) cur = t; }
+      tocLinks.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + (cur && cur.id)));
+    }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    onScroll();
+  </script>
+</body>
+</html>

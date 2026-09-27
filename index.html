@@ -61,6 +61,7 @@
   .b-math { background: var(--green); }
   .b-sec  { background: var(--orange); }
   .b-dev  { background: var(--blue); }
+  .b-guide { background: var(--purple); }
   .card h3 { margin: 0 0 8px; font-size: 1.15rem; }
   .card p { margin: 0; color: var(--muted); font-size: .92rem; }
   .card .meta { margin-top: 14px; font-size: .8rem; color: #9ca3af; }
@@ -84,7 +85,7 @@
 
   <main>
     <h2 class="section-title">资料目录</h2>
-    <p class="section-sub">目前收录 3 份，后续会持续扩充。</p>
+    <p class="section-sub">目前收录 4 份，后续会持续扩充。</p>
 
     <div class="grid">
       <a class="card" href="materials/triangle-congruence.html">
@@ -107,6 +108,13 @@
         <p>WSL + VSCode + Ubuntu 下 WS63 SparkLink 开发：PEP 668 排错、venv 环境搭建、menuconfig 切 demo、编译与 Windows 侧烧录全流程踩坑记录。</p>
         <div class="meta">更新于 2026-09-27 · 约 24 KB</div>
       </a>
+
+      <a class="card" href="materials/add-material-guide.html">
+        <span class="badge b-guide">站点 · 指南</span>
+        <h3>如何添加新资料 · 操作指南</h3>
+        <p>三步把新资料挂上资料站：准备内容页、在首页复制卡片改标题/链接/说明、重新发布。含真实卡片代码与常见坑。</p>
+        <div class="meta">更新于 2026-09-27 · 约 16 KB</div>
+      </a>
     </div>
 
     <div class="add-note">
@@ -116,7 +124,7 @@
         <li>在本页 <code>&lt;div class="grid"&gt;</code> 里复制一张 <code>.card</code>，改标题、链接和说明；</li>
         <li>重新发布（推送更新）即可生效。</li>
       </ol>
-      <p style="margin:10px 0 0;color:#9ca3af;font-size:.85rem;">懒得动手？直接把资料发给我，我帮你加好并重新上线。</p>
+      <p style="margin:10px 0 0;color:#9ca3af;font-size:.85rem;">懒得动手？直接把资料发给我，我帮你加好并重新上线。详细说明见 <a href="materials/add-material-guide.html" style="color:#7c3aed;">《如何添加新资料 · 操作指南》</a>。</p>
     </div>
   </main>
 
