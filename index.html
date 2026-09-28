@@ -62,6 +62,7 @@
   .b-sec  { background: var(--orange); }
   .b-dev  { background: var(--blue); }
   .b-guide { background: var(--purple); }
+  .b-eval { background: #059669; }
   .card h3 { margin: 0 0 8px; font-size: 1.15rem; }
   .card p { margin: 0; color: var(--muted); font-size: .92rem; }
   .card .meta { margin-top: 14px; font-size: .8rem; color: #9ca3af; }
@@ -85,14 +86,14 @@
 
   <main>
     <h2 class="section-title">资料目录</h2>
-    <p class="section-sub">目前收录 4 份，后续会持续扩充。</p>
+    <p class="section-sub">目前收录 5 份，后续会持续扩充。</p>
 
     <div class="grid">
       <a class="card" href="materials/triangle-congruence.html">
         <span class="badge b-math">数学 · 几何</span>
         <h3>全等三角形判定 · 复习讲义</h3>
-        <p>五大判定定理（SSS / SAS / ASA / AAS / HL）配可交互图示，外加 SSA、AAA 两大陷阱、判定决策树与 8 道自测题。</p>
-        <div class="meta">更新于 2026-09-23 · 约 28 KB</div>
+        <p>五大判定定理（SSS / SAS / ASA / AAS / HL）配可交互图示，外加 SSA、AAA 两大陷阱、判定决策树与 8 道自测题。已内嵌全部依赖，离线可用。</p>
+        <div class="meta">更新于 2026-09-27 · 约 536 KB</div>
       </a>
 
       <a class="card" href="materials/itsecai-review.html">
@@ -109,11 +110,18 @@
         <div class="meta">更新于 2026-09-27 · 约 24 KB</div>
       </a>
 
+      <a class="card" href="materials/prompt-evaluator.html">
+        <span class="badge b-eval">AI · 工具</span>
+        <h3>Prompt 评测器 · 纯浏览器版</h3>
+        <p>上传数据集、写 Prompt 模板、选模型发起评测，实时看 Exact Match / Token F1 / ROUGE-L / LLM 评分，支持多版本对比与显著性检验。零后端，数据不出本机。</p>
+        <div class="meta">更新于 2026-09-28 · 约 43 KB</div>
+      </a>
+
       <a class="card" href="materials/add-material-guide.html">
         <span class="badge b-guide">站点 · 指南</span>
         <h3>如何添加新资料 · 操作指南</h3>
-        <p>三步把新资料挂上资料站：准备内容页、在首页复制卡片改标题/链接/说明、重新发布。含真实卡片代码与常见坑。</p>
-        <div class="meta">更新于 2026-09-27 · 约 16 KB</div>
+        <p>手上只有一个 HTML 文件也能搞定：文件体检、起名、搭本地文件夹、下载首页、加卡片、本地验收、网页上传的 7 步完整流程，附排错对照表。</p>
+        <div class="meta">更新于 2026-09-27 · 约 24 KB</div>
       </a>
     </div>
 
