@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>iTransformer 论文复现手册 · 四阶段流水线</title>
+<style>
+  :root {
+    --bg: #f5f7fb; --card: #fff; --ink: #1f2937; --muted: #6b7280;
+    --line: #e5e7eb; --blue: #2563eb; --green: #059669; --red: #dc2626;
+    --orange: #ea580c; --purple: #7c3aed; --cyan: #0891b2; --gold: #f59e0b;
+    --shadow: 0 6px 20px rgba(15,23,42,.08);
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif; background:var(--bg); color:var(--ink); line-height:1.7; }
+  .topbar { background:linear-gradient(135deg,#0891b2,#2563eb); color:#fff; padding:18px 22px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  .topbar h1 { margin:0; font-size:1.25rem; }
+  .topbar .sub { font-size:.8rem; opacity:.9; margin-top:2px; }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  .tab { padding:7px 16px; border-radius:999px; border:1px solid rgba(255,255,255,.35); color:#fff; cursor:pointer; font-size:.85rem; background:transparent; }
+  .tab.active { background:#fff; color:#0891b2; font-weight:700; border-color:#fff; }
+  main { max-width:1060px; margin:0 auto; padding:22px 18px 60px; }
+  .panel { display:none; }
+  .panel.active { display:block; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; box-shadow:var(--shadow); margin-bottom:18px; }
+  .card h2 { margin:0 0 14px; font-size:1.15rem; }
+  .card h3 { margin:18px 0 8px; font-size:1rem; }
+  .card h4 { margin:14px 0 6px; font-size:.93rem; color:var(--blue); }
+  .card p { margin:8px 0; font-size:.92rem; }
+  .card ul, .card ol { margin:8px 0; padding-left:22px; font-size:.92rem; }
+  .card li { margin:4px 0; }
+  code { background:#eef2ff; color:#4338ca; padding:1px 6px; border-radius:5px; font-size:.85rem; font-family:Consolas,"Courier New",monospace; }
+  pre { background:#0f172a; color:#e2e8f0; border-radius:10px; padding:16px 18px; overflow-x:auto; font-size:.82rem; line-height:1.6; margin:10px 0; }
+  pre code { background:transparent; color:inherit; padding:0; border-radius:0; font-size:inherit; }
+  .tbl { overflow-x:auto; border:1px solid var(--line); border-radius:10px; margin:10px 0; }
+  table { border-collapse:collapse; width:100%; font-size:.85rem; }
+  th, td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:#f8fafc; font-weight:700; color:var(--muted); white-space:nowrap; }
+  tr:last-child td { border-bottom:none; }
+  .tag { display:inline-block; padding:2px 9px; border-radius:999px; font-size:.75rem; font-weight:700; }
+  .tag.blue { background:#e0e7ff; color:#3730a3; }
+  .tag.green { background:#d1fae5; color:#065f46; }
+  .tag.red { background:#fee2e2; color:#991b1b; }
+  .tag.gold { background:#fef3c7; color:#92400e; }
+  .tag.gray { background:#f3f4f6; color:#4b5563; }
+  .tag.orange { background:#ffedd5; color:#9a3412; }
+  .tag.cyan { background:#cffafe; color:#155e75; }
+  .note { background:#fefce8; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; font-size:.85rem; color:#854d0e; margin:12px 0; }
+  .note.red { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
+  .note.blue { background:#eff6ff; border-color:#bfdbfe; color:#1e40af; }
+  .quote { border-left:4px solid var(--blue); background:#f8fafc; padding:10px 16px; border-radius:0 8px 8px 0; margin:10px 0; font-size:.92rem; color:#374151; }
+  .flow-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin:12px 0; }
+  .flow-step { background:#f8fafc; border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .flow-step .num { display:inline-block; width:26px; height:26px; line-height:26px; text-align:center; border-radius:50%; background:var(--cyan); color:#fff; font-weight:800; font-size:.85rem; margin-bottom:6px; }
+  .flow-step h4 { margin:4px 0 4px; font-size:.95rem; color:var(--ink); }
+  .flow-step p { margin:0; font-size:.82rem; color:var(--muted); }
+  .muted { color:var(--muted); font-size:.85rem; }
+  .footer { text-align:center; color:#9ca3af; font-size:.8rem; padding:10px 0 40px; }
+  .footer a { color:var(--blue); text-decoration:none; }
+  a { color:var(--blue); }
+  @media (max-width:640px) {
+    .topbar { flex-direction:column; align-items:flex-start; }
+    .card { padding:16px; }
+  }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>iTransformer 论文复现手册</h1>
+      <div class="sub">四阶段流水线：选论文 → 信息提取 → 代码骨架 → 实验设计 → 进度追踪 · 打开即读、可离线、可转发</div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-panel="overview">0. 概览</button>
+      <button class="tab" data-panel="paper">1. 论文分析</button>
+      <button class="tab" data-panel="guide">2. 实验设计</button>
+      <button class="tab" data-panel="code">3. 代码骨架</button>
+      <button class="tab" data-panel="tracker">4. 进度追踪</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ======================= 概览 ======================= -->
+    <section class="panel active" id="panel-overview">
+      <div class="card">
+        <h2>这个项目是什么</h2>
+        <p>一次完整的 <strong>AI 论文复现课程实践</strong>：从零选定一篇近三年、单卡可跑的 AI 论文，走完「选论文 → 提取论文信息 → 搭代码骨架 → 设计实验 → 追踪进度」五个阶段。本页是全部成果的自包含手册，以后换一篇论文复现时，同样可以照这套流程走。</p>
+        <div class="note blue">
+          <strong>最终选定：</strong>iTransformer: Inverted Transformers are Effective for Time Series Forecasting（ICLR 2024 <strong>Spotlight</strong>，清华大学 THUML）· <a href="https://arxiv.org/abs/2310.06625" target="_blank" rel="noreferrer">arXiv:2310.06625</a> · <a href="https://github.com/thuml/iTransformer" target="_blank" rel="noreferrer">官方代码 thuml/iTransformer</a>
+        </div>
+        <p><strong>选型一句话：</strong>仅 2 个核心模块（倒置嵌入 + 原生 Transformer 编码器）、8 个公开数据集、模型约 0.5M 参数、单卡 8GB（RTX 5060 量级）几分钟一轮训练——课程复现的甜点区。</p>
+      </div>
+
+      <div class="card">
+        <h2>四阶段流水线</h2>
+        <div class="flow-grid">
+          <div class="flow-step"><span class="num">1</span><h4>选论文 + 信息提取</h4><p>三选一确定目标论文；无 PDF 条件下基于论文理解提取 7 要素：研究问题 / 架构 / 实验设置 / 超参 / 伪代码 / 难点 / 开源情况。</p></div>
+          <div class="flow-step"><span class="num">2</span><h4>代码骨架</h4><p>12 个文件的复现骨架：每个类 / 函数只有签名 + docstring + TODO，按图施工填空即可，杜绝"从上到下抄官方代码"。</p></div>
+          <div class="flow-step"><span class="num">3</span><h4>实验设计</h4><p>5 步验证主线 + 5 个消融变体 + 预期结果区间（论文值 ±10%）+ 10 条失败排查清单。</p></div>
+          <div class="flow-step"><span class="num">4</span><h4>进度追踪</h4><p>30 行任务表：模块 / 任务 / 状态 / 预计耗时 / 依赖 / 验证方式，总工期约 8~11 个工作日。</p></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>候选论文三选一（均已核实）</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>#</th><th>论文</th><th>会议</th><th>核心方法</th><th>为什么适合复现</th><th>arXiv</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>1</strong> <span class="tag cyan">选定</span></td>
+              <td><strong>iTransformer</strong></td>
+              <td>ICLR 2024 Spotlight</td>
+              <td>倒置 Transformer：每个变量的整段历史序列作为一个 token，注意力建模变量间相关、FFN 建模时间模式</td>
+              <td>2 个核心模块、0.5M 参数、8 个公开数据集、单卡几分钟一轮，官方代码开源且极简（约 60 行）</td>
+              <td><a href="https://arxiv.org/abs/2310.06625" target="_blank" rel="noreferrer">2310.06625</a></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>FITS</td>
+              <td>ICLR 2024</td>
+              <td>复数频域线性插值 + 低通滤波做预测/异常检测</td>
+              <td>仅约 10k 参数、CPU 可跑、一天可复现完整实验，适合算力极限场景</td>
+              <td><a href="https://arxiv.org/abs/2307.03756" target="_blank" rel="noreferrer">2307.03756</a></td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>KAN</td>
+              <td>arXiv 2024（高引预印本）</td>
+              <td>B 样条可学习激活函数替代 MLP 固定激活（Kolmogorov-Arnold 表示定理）</td>
+              <td>方法单点创新、官方示例单 CPU 10 分钟内复现、可解释性实验出彩</td>
+              <td><a href="https://arxiv.org/abs/2404.19756" target="_blank" rel="noreferrer">2404.19756</a></td>
+            </tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <h2>三条复现红线（违反任意一条，数字与论文不可比）</h2>
+        <div class="note red">
+          <ol style="margin:4px 0;padding-left:20px;">
+            <li><strong>数据泄露</strong>：StandardScaler 只能在训练段拟合；</li>
+            <li><strong>评测协议</strong>：MSE / MAE 必须在逆归一化后的原始量纲上计算，test 滑窗 stride = 1；</li>
+            <li><strong>超参细节</strong>：<code>d_ff = d_model</code>（不是 NLP 惯例的 4×）、pre-LN 残差、编码器末端 LayerNorm。</li>
+          </ol>
+        </div>
+        <p class="muted">另有硬件提示：RTX 5060（Blackwell，sm_120）必须 PyTorch ≥ 2.7 的 cu128 轮子；旧版 torch 会出现 <code>torch.cuda.is_available()</code> 为 True 但 GPU 实际不可用的坑。</p>
+      </div>
+    </section>
+
+    <!-- ======================= 论文分析 ======================= -->
+    <section class="panel" id="panel-paper">
+      <div class="card">
+        <h2>论文元信息</h2>
+        <div class="tbl"><table>
+          <tbody>
+            <tr><th style="width:110px;">标题</th><td>iTransformer: Inverted Transformers are Effective for Time Series Forecasting</td></tr>
+            <tr><th>作者</th><td>Yong Liu*, Tengge Hu*, Haoran Zhang*, Haixu Wu*, Shiyu Wang, Lintao Ma, Mingsheng Long（清华大学）</td></tr>
+            <tr><th>发表</th><td><span class="tag cyan">ICLR 2024 Spotlight</span></td></tr>
+            <tr><th>arXiv</th><td><a href="https://arxiv.org/abs/2310.06625" target="_blank" rel="noreferrer">arxiv.org/abs/2310.06625</a></td></tr>
+            <tr><th>官方代码</th><td><a href="https://github.com/thuml/iTransformer" target="_blank" rel="noreferrer">github.com/thuml/iTransformer</a>（另集成于 Time-Series-Library）</td></tr>
+            <tr><th>任务</th><td>多变量长时间序列预测（Long-term Time Series Forecasting）</td></tr>
+            <tr><th>影响力</th><td>PaperDigest Most Influential Paper；已被工业界（蚂蚁集团绿色计算等）采用</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note">⚠️ 本页关键数字为无 PDF 条件下凭对论文与官方代码的理解整理，动手前请对照 arXiv 原文附录与官方 <code>scripts/</code> 逐项核对（文中已标注）。</div>
+      </div>
+
+      <div class="card">
+        <h2>1. 研究问题</h2>
+        <p><strong>核心问题：为什么原生 Transformer 在时序预测上长期打不过线性模型（DLinear 等），以及如何在不修改任何 Transformer 组件的前提下让它重新成为 SOTA？</strong></p>
+        <p>论文诊断出传统用法（"时间点当 token"）的致命缺陷：</p>
+        <ul>
+          <li><strong>时间 token 语义混淆</strong>：把同一时间戳上所有变量的取值融合进一个 embedding。不同变量是完全不同的物理量（温度、湿度、电流……），融合后的 token 语义混乱，注意力图无意义。</li>
+          <li><strong>组件职责错配</strong>：注意力机制本就擅长建模集合元素间的相关性 → 应学<strong>变量间关联</strong>而非相邻时间点的冗余关联；FFN 本就是逐 token 非线性变换器 → 应学<strong>单个变量整段序列的时间表示</strong>。</li>
+          <li><strong>长回看窗口退化</strong>：时间点当 token 导致序列越长注意力开销越大、性能反而下降。</li>
+        </ul>
+        <div class="quote"><strong>解法一句话</strong>：倒置（Inversion）——把每个变量的<strong>整段历史序列</strong>压缩成一个 token，让注意力在 N 个变量 token 之间做，让 FFN 在每个变量 token 内部做时间建模。</div>
+      </div>
+
+      <div class="card">
+        <h2>2. 方法架构</h2>
+        <h3>总体数据流</h3>
+<pre><code>输入 x ∈ R^(B×T×N)          (B=batch, T=回看长度96, N=变量数)
+        │ transpose(-2,-1)
+        ▼
+x' ∈ R^(B×N×T)              每一行 = 某个变量的整段历史
+        │ Variate Embedding: Linear(T → d_model)
+        ▼
+H ∈ R^(B×N×d)               N 个"变量 token"
+        │ × L 层标准 Transformer Encoder
+        │   ├── MHSA(H)   ←注意力在 N 个变量间，学互相关
+        │   └── FFN(H)    ←FFN 逐变量独立，学时间模式（共享权重）
+        ▼
+H' ∈ R^(B×N×d)
+        │ Prediction Head: Linear(d → H_pred)
+        ▼
+Y ∈ R^(B×N×H_pred)          每个变量的未来 H_pred 步
+        │ transpose(-2,-1)
+        ▼
+ŷ ∈ R^(B×H_pred×N)          预测输出</code></pre>
+
+        <h3>模块 1：Variate Embedding（倒置嵌入）</h3>
+        <ul>
+          <li>输入先转置成 <code>B×N×T</code>，再对每个变量的 T 维序列做一次线性投影 <code>Linear(T → d)</code>；</li>
+          <li>得到 N 个 token，每个 token 是一个变量的"全局画像"，而非一个时间点的"多变量快照"；</li>
+          <li>LayerNorm 作用在每个 token（时间维）上 ≈ 对每条序列做软归一化，缓解分布漂移；数据层面对每个变量独立 StandardScaler。</li>
+        </ul>
+
+        <h3>模块 2：复用原生 Transformer Encoder（组件零改动）</h3>
+        <ul>
+          <li><strong>MHSA</strong>：注意力矩阵为 N×N（变量×变量），显式学习多变量关联——多变量数据集（Electricity 321 变量、Traffic 862 变量）收益最大；</li>
+          <li><strong>FFN</strong>：<code>Linear(d→d_ff) → GELU → Linear(d_ff→d)</code>，逐 token 独立作用且跨变量共享——等价于用一个共享 MLP 对每个变量的时间序列做非线性特征提取；</li>
+          <li>pre-LN 残差结构堆叠 L 层。</li>
+        </ul>
+        <p><strong>预测头</strong>：<code>Linear(d → H_pred)</code>，把每个变量 token 直接投影为未来 H_pred 步预测。</p>
+
+        <h3>参数量与复杂度</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>项目</th><th>表达式</th><th>典型值（ETTh1, d=128）</th></tr></thead>
+          <tbody>
+            <tr><td>参数量</td><td><code>N×T×d（嵌入）+ L×(4d²+2d·d_ff)（编码器）+ N×d×H（头）</code></td><td>约 0.5M</td></tr>
+            <tr><td>注意力复杂度</td><td>O(N²·d)（<strong>与 T 无关</strong>）</td><td>N=7 时可忽略</td></tr>
+            <tr><td>前向显存</td><td>注意力矩阵 B×heads×N×N</td><td>Traffic(N=862) 时需注意</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note blue"><strong>关键洞察</strong>：倒置后注意力的平方复杂度从"时间维"转移到"变量维"。ETT 只有 7 个变量，注意力几乎免费——这就是它对任意回看长度 T 都友好的原因。</div>
+      </div>
+
+      <div class="card">
+        <h2>3. 实验设置</h2>
+        <h3>数据集（全部公开）</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>数据集</th><th>变量数 N</th><th>采样粒度</th><th>总长度(约)</th><th>划分方式</th></tr></thead>
+          <tbody>
+            <tr><td>ETTh1 / ETTh2</td><td>7</td><td>1 小时</td><td>17,420</td><td>前 12 月训练 / 4 月验证 / 4 月测试</td></tr>
+            <tr><td>ETTm1 / ETTm2</td><td>7</td><td>15 分钟</td><td>69,680</td><td>前 12 月训练 / 4 月验证 / 4 月测试</td></tr>
+            <tr><td>Weather</td><td>21</td><td>10 分钟</td><td>52,696</td><td>0.7 / 0.1 / 0.2 按比例</td></tr>
+            <tr><td>Electricity (ECL)</td><td>321</td><td>1 小时</td><td>26,304</td><td>0.7 / 0.1 / 0.2</td></tr>
+            <tr><td>Traffic</td><td>862</td><td>1 小时</td><td>17,544</td><td>0.7 / 0.1 / 0.2</td></tr>
+            <tr><td>ILI（流感样病）</td><td>7</td><td>1 周</td><td>966</td><td>0.7 / 0.1 / 0.2</td></tr>
+          </tbody>
+        </table></div>
+        <p class="muted">下载：官方仓库 README 提供 Google Drive / 清华云盘 / 百度网盘一键包（all_six_datasets.zip）。</p>
+
+        <h3>统一协议（与此前工作对齐）</h3>
+        <ul>
+          <li>回看窗口 <strong>T = 96</strong>（ILI 例外，T = 36）；</li>
+          <li>预测长度 H ∈ {96, 192, 336, 720}（ILI: {24, 36, 48, 60}）；</li>
+          <li>指标：<strong>MSE / MAE</strong>，均在<strong>逆归一化后的原始量纲</strong>上计算；</li>
+          <li>测试协议：滑动窗口 stride = 1 滚动预测；每配置 3 个随机种子取平均；</li>
+          <li>损失函数：MSE；优化器：Adam。</li>
+        </ul>
+
+        <h3>Baselines</h3>
+        <p>PatchTST、TimesNet、DLinear、Crossformer、FEDformer、Autoformer、Informer、原版 Transformer、N-BEATS 等。核心叙事：iTransformer 在几乎全部数据集上超过线性模型 DLinear 与此前最强 Transformer 变体 PatchTST。</p>
+
+        <h3>论文核心结论（复现要验证的靶子）</h3>
+        <ol>
+          <li>多变量数据集（ECL/Traffic/Weather）上显著优于时间 token 化的各 Transformer 变体；</li>
+          <li><strong>回看窗口越长性能越好</strong>（与 PatchTST 等相反）；</li>
+          <li>变量间注意力学到的相关性可解释（可视化注意力图）；</li>
+          <li>跨变量泛化：部分变量训练后可推广到未见过的变量。</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h2>4. 全部超参数</h2>
+        <div class="note">⚠️ 凭记忆整理自论文附录与官方 <code>scripts/</code>；动手前请以 arXiv 原文附录 A 与官方脚本为准逐项核对。</div>
+        <h3>通用超参数（所有数据集共享）</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>超参数</th><th>值</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>optimizer</td><td>Adam</td><td></td></tr>
+            <tr><td>learning rate</td><td>1e-4</td><td>个别数据集脚本可能为 1e-3 或 5e-4（待核对）</td></tr>
+            <tr><td>batch size</td><td>32</td><td>Traffic/ECL 显存紧张时可减半</td></tr>
+            <tr><td>train epochs</td><td>10</td><td>early stopping patience = 3</td></tr>
+            <tr><td>loss</td><td>MSE</td><td></td></tr>
+            <tr><td>n_heads</td><td>8</td><td></td></tr>
+            <tr><td>dropout</td><td>0.1</td><td></td></tr>
+            <tr><td>label_len</td><td>48（ETT 系）/ 96</td><td>仅影响 DataLoader 返回格式，模型不使用</td></tr>
+            <tr><td>随机种子</td><td>3 个不同种子</td><td>结果取均值</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>按数据集的关键超参数（官方脚本典型配置）</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>数据集</th><th>e_layers (L)</th><th>d_model (d)</th><th>d_ff</th><th>备注</th></tr></thead>
+          <tbody>
+            <tr><td>ETTh1</td><td>2</td><td>128</td><td>128</td><td></td></tr>
+            <tr><td>ETTh2</td><td>2</td><td>256</td><td>256</td><td></td></tr>
+            <tr><td>ETTm1</td><td>3</td><td>128</td><td>128</td><td>待核对</td></tr>
+            <tr><td>ETTm2</td><td>2</td><td>256</td><td>256</td><td>待核对</td></tr>
+            <tr><td>Weather</td><td>3</td><td>512</td><td>512</td><td>待核对</td></tr>
+            <tr><td>Electricity</td><td>3</td><td>256~512</td><td>同 d_model</td><td>待核对</td></tr>
+            <tr><td>Traffic</td><td>3</td><td>512</td><td>512</td><td>N=862，注意 N² 注意力显存</td></tr>
+            <tr><td>ILI</td><td>2</td><td>512</td><td>512</td><td>T=36, H≤60</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note blue"><strong>规律</strong>：数据集越大/变量越多 → 层数 3、维度 512；ETT 小数据集 → 层数 2、维度 128~256。<code>d_ff = d_model</code>（与 NLP 惯例 4× 不同，复现易踩坑）。</div>
+      </div>
+
+      <div class="card">
+        <h2>5. 核心算法伪代码</h2>
+<pre><code>Algorithm: iTransformer 前向（训练与推理一致）
+────────────────────────────────────────────────────────
+输入: x ∈ R^(B×T×N)        # 标准化后的历史窗口
+超参: L(层数), d(d_model), H(预测长度)
+
+1  x_inv ← transpose(x, (0, 2, 1))          # B×N×T，"倒置"
+2  Z ← Linear_{T→d}(x_inv)                   # B×N×d，变量 token
+3  for l = 1 .. L:                           # pre-LN Encoder
+4      Z ← Z + MHSA(LN(Z))                   # 注意力: N×N 变量间相关
+5      Z ← Z + FFN(LN(Z))                    # FFN: 逐变量时间建模
+6  Z ← LN_final(Z)
+7  Y ← Linear_{d→H}(Z)                       # B×N×H
+8  ŷ ← transpose(Y, (0, 2, 1))               # B×H×N
+9  return ŷ
+
+训练: minimize MSE(ŷ, y) 在标准化空间；
+评测: inverse_scale(ŷ) 后与原始量纲真值计算 MSE/MAE。
+────────────────────────────────────────────────────────
+# 消融时最常用的两把"手术刀"：
+#   · 第 4 行换成对时间维注意力  → 退化成原版 Transformer（验证"倒置"贡献）
+#   · 删除第 4 行（只留 FFN）    → 退化成逐变量 MLP（验证变量注意力贡献）</code></pre>
+      </div>
+
+      <div class="card">
+        <h2>6. 复现难点（7 条）</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>#</th><th>难点</th><th>具体风险</th><th>缓解策略</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><strong>归一化与逆归一化的维度</strong></td><td>per-variate StandardScaler 必须只在训练段拟合；逆变换时 (B,H,N) 与 scaler 的 axis 对齐极易写错</td><td>单元测试：<code>inverse(scaler.transform(x)) ≈ x</code></td></tr>
+            <tr><td>2</td><td><strong>数据划分边界</strong></td><td>ETT 按月划分（12/4/4），验证/测试段起点要向前多留 T-1 个点；写错边界系统性偏离论文 5%~30%</td><td>直接对照官方 data_loader.py 的 border1s/border2s</td></tr>
+            <tr><td>3</td><td><strong>Traffic/ECL 显存峰值</strong></td><td>注意力矩阵 B×8×862×862，float32 下 batch=32 约 750MB，8GB 卡易 OOM</td><td>batch 降到 8~16；或梯度累积</td></tr>
+            <tr><td>4</td><td><strong>评测协议</strong></td><td>测试滑窗 stride 必须=1；指标必须在逆归一化后算</td><td>对照官方 exp/exp_main.py 的 test 循环</td></tr>
+            <tr><td>5</td><td><strong>与 baseline 公平比较</strong></td><td>必须 T=96 统一、三次种子取平均</td><td>实验脚本化，避免手工改参偏差</td></tr>
+            <tr><td>6</td><td><strong>超参细节</strong></td><td>d_ff=d_model（非 4×）、pre-LN、末端 LN——任一不对齐，ETTh2 可能差 0.01+ MSE</td><td>逐行核对官方 models/iTransformer.py（约 60 行）</td></tr>
+            <tr><td>7</td><td><strong>ILI 小数据集过拟合</strong></td><td>仅 966 点，early stopping 判断不准</td><td>patience 严格=3，验证集 loss 选最优 checkpoint</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <h2>7. 开源代码情况</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>项目</th><th>状态</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>官方 PyTorch 实现</td><td><span class="tag green">✅ 完整开源</span></td><td>thuml/iTransformer（独立可一键跑通）与 Time-Series-Library（统一框架版）</td></tr>
+            <tr><td>数据集下载</td><td><span class="tag green">✅</span></td><td>README 提供网盘链接，CSV 解压即用</td></tr>
+            <tr><td>训练/测试脚本</td><td><span class="tag green">✅</span></td><td>每个数据集 × 每个 horizon 一条命令</td></tr>
+            <tr><td>预训练权重</td><td><span class="tag gold">⚠️ 部分</span></td><td>TSLib 提供 checkpoints/，独立仓库不全</td></tr>
+            <tr><td>复现友好度</td><td><span class="tag cyan">★★★★★</span></td><td>核心模型仅约 60 行；数据 loader 生态久经考验</td></tr>
+          </tbody>
+        </table></div>
+        <div class="quote"><strong>复现策略建议</strong>：不看官方模型文件，仅对照其 data_loader.py（划分边界）与 scripts/（超参），模型本体自己写——这是最佳的学习与考核方式。</div>
+      </div>
+    </section>
+
+    <!-- ======================= 实验设计 ======================= -->
+    <section class="panel" id="panel-guide">
+      <div class="card">
+        <h2>论文核心结论（复现靶子）</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>#</th><th>结论</th><th>验证优先级</th></tr></thead>
+          <tbody>
+            <tr><td>C1</td><td>倒置架构在多变量数据集（ECL/Traffic/Weather）上超过 PatchTST / DLinear 等此前 SOTA</td><td>★★★</td></tr>
+            <tr><td>C2</td><td>回看窗口越长，iTransformer 性能单调变好（时间 token 化 Transformer 相反）</td><td>★★★</td></tr>
+            <tr><td>C3</td><td>变量间注意力是主要收益来源（去掉它性能大幅下降）</td><td>★★</td></tr>
+            <tr><td>C4</td><td>注意力学到的变量相关性可解释、可视化</td><td>★</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <h2>验证论文结论的步骤（主线，5 步）</h2>
+        <h4>Step 1｜环境与数据体检（0.5 天）</h4>
+        <ul>
+          <li>装 PyTorch（8GB 卡注意 cu128 轮子）；下载 8 个数据集到 <code>datasets/</code>；</li>
+          <li>跑 <code>python -m data.preprocess --dataset ETTh1</code>：核对行数、变量数、NaN，<strong>打印三段边界并与官方 data_loader.py 逐项比对</strong>；</li>
+          <li><strong>通过标准</strong>：ETTh1 边界 = train(0, 8640) / val(8544, 11520) / test(11424, 14400)。</li>
+        </ul>
+        <h4>Step 2｜单点复现：ETTh1 96→96（0.5 天）</h4>
+        <ul>
+          <li>默认配置训练 1 个种子；记录 test MSE/MAE；</li>
+          <li><strong>通过标准</strong>：MSE 落入论文值 ±10% 相对误差区间（见预期结果表）；</li>
+          <li>未达标 → 先查失败排查清单，禁止立刻调参"凑数"。</li>
+        </ul>
+        <h4>Step 3｜横向扩展：数据集 × horizon 矩阵（1~1.5 天）</h4>
+        <ul>
+          <li>优先级（算力友好）：ETTh1 → ETTh2 → ETTm2 → Weather → ECL → ETTm1 → Traffic → ILI；</li>
+          <li>每数据集 4 个 horizon {96, 192, 336, 720}；超参见论文分析页 §4。</li>
+        </ul>
+        <h4>Step 4｜稳定性：三种子协议（0.5 天）</h4>
+        <ul>
+          <li>对 ETTh1 / ETTh2 / Weather / ECL 每配置补齐 3 个种子，报告 mean±std；</li>
+          <li><strong>通过标准</strong>：std/mean &lt; 5%（ETTh2 波动天然偏大可放宽到 8%）。</li>
+        </ul>
+        <h4>Step 5｜结论级验证（0.5 天）</h4>
+        <ul>
+          <li>C2：ETTh1 上回看长度 T ∈ {48, 96, 192, 336, 512} 扫描（消融 A5）；</li>
+          <li>C4：取 ECL 训练后模型，导出 321×321 平均注意力矩阵热力图，观察变量簇。</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>消融实验设计（5 个变体，全部基于 --override 实现）</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>ID</th><th>变体</th><th>具体做法</th><th>验证什么</th><th>预期现象</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>A1</strong></td><td>去倒置（时间 token 化）</td>
+              <td>modules.py 加开关：嵌入改成"每时间步一个 token"（原版 Transformer 用法），层数/维度不变</td>
+              <td><strong>倒置本身</strong>的贡献（论文最核心主张）</td>
+              <td>多变量数据集 MSE 显著上升（论文报告较原版平均提升 38.9%）；ETT（N=7）退化较小</td>
+            </tr>
+            <tr>
+              <td><strong>A2</strong></td><td>去变量注意力</td>
+              <td>删除 MHSA，仅保留 FFN（等价于共享权重的逐变量 MLP + 线性嵌入头）</td>
+              <td>变量间相关性建模的收益</td>
+              <td>ECL/Traffic 明显变差；ETTh1 变化较小（N=7 变量相关弱）</td>
+            </tr>
+            <tr>
+              <td><strong>A3</strong></td><td>去 FFN</td>
+              <td>删除 FFN，仅保留 MHSA</td>
+              <td>逐变量时间非线性建模的收益</td>
+              <td>全数据集普遍变差，验证"FFN 负责时间模式"的组件分工论</td>
+            </tr>
+            <tr>
+              <td><strong>A4</strong></td><td>结构敏感性扫描</td>
+              <td>e_layers ∈ {1,2,3,4}；d_model ∈ {64,128,256,512}（ETTh1 + ECL）</td>
+              <td>超参鲁棒性（论文主张不需要精调）</td>
+              <td>曲线平坦：2→3 层变化 &lt; 3%；过大 d_model 在 ETT 小数据集上过拟合</td>
+            </tr>
+            <tr>
+              <td><strong>A5</strong></td><td>回看长度 T 扫描</td>
+              <td>T ∈ {48, 96, 192, 336, 512}（H 固定 96，ETTh1 + Weather）</td>
+              <td><strong>结论 C2</strong>：倒置后长回看有益</td>
+              <td>iTransformer MSE 随 T 单调下降；A1 变体相反——两线交叉是最有说服力的图</td>
+            </tr>
+          </tbody>
+        </table></div>
+        <p class="muted">交付物：每个消融一张表 + 一张折线图；A5 建议做成 iTransformer vs A1 双线对比图（复刻论文 Figure 3 风格）。</p>
+      </div>
+
+      <div class="card">
+        <h2>预期结果范围（论文值 → 可接受区间）</h2>
+        <div class="note">⚠️ "论文值"凭记忆整理，开跑前务必与 arXiv 原文 Table 1 逐格核对；区间按 ±10% 相对误差给出。</div>
+        <div class="tbl"><table>
+          <thead><tr><th>数据集</th><th>H</th><th>论文 MSE（约）</th><th>论文 MAE（约）</th><th>可接受 MSE 区间</th></tr></thead>
+          <tbody>
+            <tr><td>ETTh1</td><td>96</td><td>0.386</td><td>0.405</td><td>0.347 ~ 0.425</td></tr>
+            <tr><td>ETTh1</td><td>192</td><td>0.441</td><td>0.436</td><td>0.397 ~ 0.485</td></tr>
+            <tr><td>ETTh1</td><td>336</td><td>0.487</td><td>0.458</td><td>0.438 ~ 0.536</td></tr>
+            <tr><td>ETTh1</td><td>720</td><td>0.503</td><td>0.491</td><td>0.453 ~ 0.553</td></tr>
+            <tr><td>ETTh2</td><td>96</td><td>0.297</td><td>0.349</td><td>0.267 ~ 0.327</td></tr>
+            <tr><td>ETTm2</td><td>96</td><td>0.180</td><td>0.264</td><td>0.162 ~ 0.198</td></tr>
+            <tr><td>Weather</td><td>96</td><td>0.174</td><td>0.214</td><td>0.157 ~ 0.191</td></tr>
+            <tr><td>ECL</td><td>96</td><td>0.148</td><td>0.240</td><td>0.133 ~ 0.163</td></tr>
+            <tr><td>ECL</td><td>336</td><td>0.186</td><td>0.269</td><td>0.167 ~ 0.205</td></tr>
+            <tr><td>Traffic</td><td>96</td><td>0.428</td><td>0.276</td><td>0.385 ~ 0.471</td></tr>
+          </tbody>
+        </table></div>
+        <h4>判读规则</h4>
+        <ul>
+          <li>落在区间内 → 复现成功，记录环境指纹后推进下一项；</li>
+          <li>超出区间 10%~20% → 优先排查，允许微调 lr ∈ {5e-4, 1e-3}；</li>
+          <li>超出 20% → 停止调参，对照官方实现逐行 diff（重点：数据边界、d_ff、pre-LN）。</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>失败排查清单（症状 → 病因 → 检查）</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>症状</th><th>最可能病因</th><th>检查方法</th></tr></thead>
+          <tbody>
+            <tr><td>MSE 全面偏高 20%+，且 ETT 尤甚</td><td>数据划分边界错误</td><td>打印 border1s/border2s 与官方比对；检查 val/test 起点是否回退了 T</td></tr>
+            <tr><td>MSE 偏高 5%~15%，均匀出现在所有数据集</td><td>① d_ff 写成 4×d_model ② post-LN 而非 pre-LN ③ 末端缺 LayerNorm</td><td>与官方 models/iTransformer.py 逐行 diff（仅 60 行）</td></tr>
+            <tr><td>MSE 好得离谱（如 0.01 级）</td><td>数据泄露：scaler 在全量数据上拟合；或指标算在标准化空间</td><td>检查 fit_scaler 输入是否只含 train 段；检查指标计算前是否 inverse_transform</td></tr>
+            <tr><td>loss = NaN</td><td>lr 过大 / 数据含 NaN / ETTm 原始异常值</td><td>lr 降 10 倍重试；df.isna().sum()；clip_grad</td></tr>
+            <tr><td>Traffic OOM</td><td>N=862 的 N² 注意力 × batch</td><td>batch 32→8；开启 AMP；还不行则用官方"批内随机采样子集变量"训练技巧</td></tr>
+            <tr><td>训练 loss 正常下降、test 指标极差</td><td>早停看错了指标（看了 test）；或测试滑窗 stride ≠ 1</td><td>确认 patience 监控 val loss；检查 test DataLoader 窗口生成步长</td></tr>
+            <tr><td>ETTh2 怎么调都不达标</td><td>ETTh2 本身方差大 + 记忆的论文值有误</td><td>先核对原文 Table 1 的 ETTh2 精确值再判断</td></tr>
+            <tr><td>单种子达标、三种子均值不达标</td><td>种子敏感（小数据集正常）</td><td>报告 mean±std，对照论文是否同样波动</td></tr>
+            <tr><td>复现速度极慢</td><td>DataLoader 单进程 + 每 batch 重复归一化</td><td>num_workers&gt;0；scaler.transform 一次性预计算存 ndarray</td></tr>
+            <tr><td>CUDA 报 "no kernel image available"</td><td>PyTorch &lt; 2.7 不支持 sm_120（RTX 5060）</td><td>装 cu128 轮子；torch.cuda.get_arch_list() 应含 sm_120</td></tr>
+          </tbody>
+        </table></div>
+        <h4>结果汇总模板</h4>
+        <p>每个实验记录一行：<code>dataset | T | H | seed | MSE | MAE | 论文MSE | Δ% | 备注</code>。所有原始数字落盘 <code>runs/*/metrics.json</code>，最终汇总成 CSV + 复现报告（含 A5 双线图与注意力热图）。</p>
+      </div>
+    </section>
+
+    <!-- ======================= 代码骨架 ======================= -->
+    <section class="panel" id="panel-code">
+      <div class="card">
+        <h2>目录结构（12 文件骨架）</h2>
+        <p>所有类 / 函数已给出签名 + docstring + TODO，按 TODO 逐项实现即可完整复现论文。核心思想只有一句话——<strong>把每个变量的整段历史序列当作一个 token</strong>，其余全是标准 Transformer。</p>
+<pre><code>code/
+├── configs/default.yaml      # 默认配置（ETTh1, 96→96），消融用 --override
+├── data/
+│   ├── preprocess.py         # 下载/划分边界(对齐官方协议!)/scaler 拟合
+│   └── dataset.py            # 滑窗 Dataset + data_provider 入口
+├── models/
+│   ├── modules.py            # 标准组件：MHA / FFN / pre-LN Encoder
+│   └── main_model.py         # iTransformer：倒置嵌入 + 编码 + 投影头
+├── trainers/trainer.py       # 训练循环 + 早停 + checkpoint
+├── evaluators/eval.py        # 测试集滚动评测 + 指标 + 可视化导出
+├── utils/
+│   ├── logger.py             # 日志 / TensorBoard / 随机种子
+│   └── metrics.py            # MSE / MAE（逆归一化后计算）
+├── train.py                  # 唯一训练入口
+├── requirements.txt
+└── README.md</code></pre>
+      </div>
+
+      <div class="card">
+        <h2>快速开始</h2>
+<pre><code># 1. 环境（RTX 5060/Blackwell 用户注意 cu128，见 requirements.txt 注释）
+pip install -r requirements.txt
+
+# 2. 数据：从官方仓库 README 的网盘链接下载 all_six_datasets.zip，解压到 ./datasets/
+
+# 3. 数据体检查看划分边界
+python -m data.preprocess --dataset ETTh1 --root ./datasets/
+
+# 4. 训练 + 评测（ETTh1, 96→96）
+python train.py --config configs/default.yaml
+
+# 5. 换数据集 / 换 horizon / 消融，全部走 override
+python train.py --config configs/default.yaml \
+    --override data.dataset=ETTh2 data.data_path=ETTh2.csv \
+               model.d_model=256 model.d_ff=256 \
+               data.pred_len=336 --seed 2025</code></pre>
+        <p class="muted">每次运行的产物：runs/&lt;实验名&gt;/ 下 train.log、checkpoint.pth、metrics.json、visual/ 预测曲线图。</p>
+      </div>
+
+      <div class="card">
+        <h2>实现顺序建议</h2>
+        <ol>
+          <li><code>utils/metrics.py</code> → <code>utils/logger.py</code>（10 分钟热身）</li>
+          <li><code>data/preprocess.py</code> 的 <code>get_split_bounds()</code>（⚠️ 最高风险，先写单元测试）</li>
+          <li><code>data/dataset.py</code> + <code>train.py</code> 数据装配（自测：窗口数 = seg_len − T − H + 1）</li>
+          <li><code>models/modules.py</code> → <code>models/main_model.py</code>（核心模型仅约 60 行）</li>
+          <li><code>trainers/trainer.py</code> → <code>evaluators/eval.py</code></li>
+          <li>按实验设计页跑主线实验与消融</li>
+        </ol>
+        <h3>关键自检清单（main_model 写完后逐项打勾）</h3>
+        <ul>
+          <li>输出形状 == (B, pred_len, n_vars)</li>
+          <li>模型内<strong>没有</strong>任何时间维 attention / 卷积 / patch 操作</li>
+          <li>参数量与官方同级（ETTh1/128d 约 0.5M，用 <code>sum(p.numel())</code> 打印）</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>数据划分协议（写 get_split_bounds 的唯一依据）</h2>
+        <div class="note red"><strong>这是复现中最容易系统性出错的一环</strong>：ETT 系列按"月"划分（12 月训练 / 4 月验证 / 4 月测试），其余数据集按 0.7 / 0.1 / 0.2 比例；验证/测试段起点必须向前回退 T 个点。</div>
+<pre><code>ETTh1/ETTh2（小时级，1 天 = 24 点）:
+    border1s = [0, 12*30*24 - T, (12*30+4*30)*24 - T]
+    border2s = [12*30*24, (12*30+4*30)*24, (12*30+8*30)*24]
+
+ETTm1/ETTm2（15 分钟级，1 天 = 96 点）:
+    上述边界全部 × 4
+
+Weather / ECL / Traffic / ILI:
+    num_train = int(n * 0.7); num_test = int(n * 0.2)
+    num_val   = n - num_train - num_test
+    border1s = [0, num_train - T, n - num_test - T]
+    border2s = [num_train, num_train + num_val, n]
+
+单元测试锚点: ETTh1 (n=17420, T=96) 的边界应恰为
+    train (0, 8640), val (8544, 11520), test (11424, 14400)</code></pre>
+      </div>
+
+      <div class="card">
+        <h2>硬件预算（单卡 8GB 显卡）</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>数据集</th><th>显存占用</th><th>单轮训练耗时（估）</th></tr></thead>
+          <tbody>
+            <tr><td>ETTh1/ETTh2（N=7, d≤256）</td><td>&lt; 2 GB</td><td>1~2 分钟</td></tr>
+            <tr><td>Weather（N=21, d=512）</td><td>~2 GB</td><td>3~5 分钟</td></tr>
+            <tr><td>ECL（N=321, d=512）</td><td>~4 GB</td><td>5~10 分钟</td></tr>
+            <tr><td>Traffic（N=862, d=512）</td><td>6~7 GB，batch 建议减半</td><td>10~20 分钟</td></tr>
+          </tbody>
+        </table></div>
+        <p class="muted">完整主线（8 数据集 × 4 horizons × 3 种子）单张 8GB 卡约 1~2 天；课程作业建议先做 ETTh1/h2 + Weather + ECL 子集。总工期（含编码与消融）约 8~11 个工作日。</p>
+      </div>
+    </section>
+
+    <!-- ======================= 进度追踪 ======================= -->
+    <section class="panel" id="panel-tracker">
+      <div class="card">
+        <h2>进度追踪表（30 项）</h2>
+        <p>状态约定：<span class="tag green">✅ 完成</span> <span class="tag blue">🔧 进行中</span> <span class="tag gray">⬜ 待办</span> <span class="tag red">⛔ 受阻</span>。每完成一项更新本行，并在"验证方式"列记录实际结果。</p>
+        <div class="tbl"><table>
+          <thead><tr><th>模块</th><th>任务</th><th>状态</th><th>预计耗时</th><th>依赖</th><th>验证方式</th></tr></thead>
+          <tbody>
+            <tr><td>准备</td><td>选定论文并完成信息提取（paper_analysis）</td><td><span class="tag green">✅</span></td><td>-</td><td>-</td><td>7 个部分齐全，关键数字标注核对项</td></tr>
+            <tr><td>准备</td><td>生成代码骨架 output/code/（12 文件）</td><td><span class="tag green">✅</span></td><td>-</td><td>paper_analysis</td><td>12 个文件含签名+docstring+TODO</td></tr>
+            <tr><td>准备</td><td>实验设计文档 + 追踪表</td><td><span class="tag green">✅</span></td><td>-</td><td>paper_analysis</td><td>消融≥3 个、排查清单≥10 条</td></tr>
+            <tr><td>环境</td><td>conda 环境 + PyTorch cu128（RTX 5060 sm_120）</td><td><span class="tag gray">⬜</span></td><td>0.5h</td><td>-</td><td>torch.cuda.get_arch_list() 含 sm_120，GPU 矩阵乘法实测通过</td></tr>
+            <tr><td>环境</td><td>下载 8 个数据集到 datasets/</td><td><span class="tag gray">⬜</span></td><td>0.5h</td><td>-</td><td>8 个 CSV 存在；行数与论文分析 §3.1 表一致（±5%）</td></tr>
+            <tr><td>数据</td><td>preprocess.get_split_bounds + 单元测试</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>数据集</td><td>ETTh1 边界=(0,8640)/(8544,11520)/(11424,14400)，单测全绿</td></tr>
+            <tr><td>数据</td><td>preprocess.fit_scaler（防泄露约束）</td><td><span class="tag gray">⬜</span></td><td>0.5h</td><td>split_bounds</td><td>代码审查：仅 train 段输入；inverse(transform(x))≈x 单测</td></tr>
+            <tr><td>数据</td><td>dataset.py 滑窗 + data_provider</td><td><span class="tag gray">⬜</span></td><td>1.5h</td><td>fit_scaler</td><td>窗口数=seg_len−T−H+1；抽 1 样本目测形状 (T,N)/(H,N)</td></tr>
+            <tr><td>模型</td><td>utils/metrics.py + logger.py</td><td><span class="tag gray">⬜</span></td><td>0.5h</td><td>-</td><td>手工构造小数组对拍 MSE/MAE</td></tr>
+            <tr><td>模型</td><td>modules.py（MHA/FFN/pre-LN Encoder）</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>-</td><td>形状单测：(B,7,128) 过 3 层返回同形状；d_ff=d_model 断言</td></tr>
+            <tr><td>模型</td><td>main_model.py（iTransformer 前向）</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>modules</td><td>输出 (B,H,N)；参数量≈0.5M（ETTh1/128d）</td></tr>
+            <tr><td>训练</td><td>trainers/trainer.py（早停+ckpt）</td><td><span class="tag gray">⬜</span></td><td>2h</td><td>dataset+model</td><td>ETTh1 上 10 epoch 内 val loss 收敛曲线平滑</td></tr>
+            <tr><td>评测</td><td>evaluators/eval.py（滚动评测+逆归一化）</td><td><span class="tag gray">⬜</span></td><td>1.5h</td><td>trainer</td><td>加载 ckpt 后 test MSE 与训练日志末尾一致</td></tr>
+            <tr><td>评测</td><td>预测可视化导出</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>eval.py</td><td>8 张预测vs真值曲线图落盘 visual/</td></tr>
+            <tr><td>主线</td><td>Step2 单点：ETTh1 96→96 达标</td><td><span class="tag gray">⬜</span></td><td>0.5h</td><td>全部代码</td><td>MSE ∈ [0.347, 0.425]（预期结果表）</td></tr>
+            <tr><td>主线</td><td>ETTh1 全 horizon {96,192,336,720}</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>Step2 达标</td><td>4 个 MSE 全部落入 ±10% 区间</td></tr>
+            <tr><td>主线</td><td>ETTh2 全 horizon</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>ETTh1 达标</td><td>同上；ETTh2 允许放宽至 ±15%</td></tr>
+            <tr><td>主线</td><td>ETTm2 全 horizon</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>-</td><td>同 ±10%</td></tr>
+            <tr><td>主线</td><td>ETTm1 全 horizon</td><td><span class="tag gray">⬜</span></td><td>1.5h</td><td>-</td><td>同 ±10%（波动大，超参先核对官方脚本）</td></tr>
+            <tr><td>主线</td><td>Weather 全 horizon</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>-</td><td>同 ±10%</td></tr>
+            <tr><td>主线</td><td>ECL（N=321）全 horizon</td><td><span class="tag gray">⬜</span></td><td>1.5h</td><td>-</td><td>同 ±10%；显存 &lt; 8GB</td></tr>
+            <tr><td>主线</td><td>Traffic（N=862）全 horizon</td><td><span class="tag gray">⬜</span></td><td>2h</td><td>ECL 通过</td><td>同 ±10%；必要时 batch 降 8~16</td></tr>
+            <tr><td>主线</td><td>ILI（T=36, H≤60）</td><td><span class="tag gray">⬜</span></td><td>0.5h</td><td>-</td><td>小数据集过拟合可控即可</td></tr>
+            <tr><td>主线</td><td>三种子协议补齐（ETTh1/h2+Weather+ECL）</td><td><span class="tag gray">⬜</span></td><td>2h</td><td>各数据集单种子达标</td><td>mean±std 落区间，std/mean&lt;5%</td></tr>
+            <tr><td>消融</td><td>A1 去倒置（时间 token 化对照）</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>主线完成</td><td>ECL 上 MSE 显著高于主线；双线图存档</td></tr>
+            <tr><td>消融</td><td>A2 去变量注意力（仅 FFN）</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>主线完成</td><td>ECL/Traffic 明显变差，ETT 变化小</td></tr>
+            <tr><td>消融</td><td>A3 去 FFN（仅注意力）</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>主线完成</td><td>全数据集普遍变差</td></tr>
+            <tr><td>消融</td><td>A4 层数/维度敏感性扫描</td><td><span class="tag gray">⬜</span></td><td>1.5h</td><td>主线完成</td><td>曲线平坦（2→3 层变化 &lt;3%）</td></tr>
+            <tr><td>消融</td><td>A5 回看长度 T 扫描（验证结论 C2）</td><td><span class="tag gray">⬜</span></td><td>1.5h</td><td>A1 完成</td><td>iTransformer 随 T 单调改善，A1 相反</td></tr>
+            <tr><td>分析</td><td>全量结果汇总 CSV + 对论文 Δ% 表</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>主线+消融</td><td>每行含 dataset/T/H/seed/MSE/MAE/Δ%</td></tr>
+            <tr><td>分析</td><td>变量注意力热力图（结论 C4）</td><td><span class="tag gray">⬜</span></td><td>1h</td><td>ECL 训练完成</td><td>321×321 热图肉眼可见变量簇</td></tr>
+            <tr><td>报告</td><td>复现报告（结论验证+差异分析+心得）</td><td><span class="tag gray">⬜</span></td><td>3h</td><td>分析完成</td><td>对照四条结论逐条给出证据</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    iTransformer 论文复现手册 · 资料来源：本机 paper_reproduce 项目四阶段产物 · 托管于 <a href="https://pages.github.com/" target="_blank" rel="noreferrer">GitHub Pages</a>
+  </footer>
+
+<script>
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.addEventListener('click', function () {
+      document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('active'); });
+      document.querySelectorAll('.panel').forEach(function (x) { x.classList.remove('active'); });
+      t.classList.add('active');
+      var p = document.getElementById('panel-' + t.dataset.panel);
+      if (p) p.classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>

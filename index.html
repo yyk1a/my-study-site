@@ -63,6 +63,7 @@
   .b-dev  { background: var(--blue); }
   .b-guide { background: var(--purple); }
   .b-eval { background: #059669; }
+  .b-ml { background: #0891b2; }
   .card h3 { margin: 0 0 8px; font-size: 1.15rem; }
   .card p { margin: 0; color: var(--muted); font-size: .92rem; }
   .card .meta { margin-top: 14px; font-size: .8rem; color: #9ca3af; }
@@ -86,7 +87,7 @@
 
   <main>
     <h2 class="section-title">资料目录</h2>
-    <p class="section-sub">目前收录 5 份，后续会持续扩充。</p>
+    <p class="section-sub">目前收录 6 份，后续会持续扩充。</p>
 
     <div class="grid">
       <a class="card" href="materials/triangle-congruence.html">
@@ -105,16 +106,23 @@
 
       <a class="card" href="materials/ws63.html">
         <span class="badge b-dev">嵌入式 · 星闪</span>
-        <h3>WS63 实操手册 · 环境搭建 + 编译烧录</h3>
-        <p>WSL + VSCode + Ubuntu 下 WS63 SparkLink 开发：PEP 668 排错、venv 环境搭建、menuconfig 切 demo、编译与 Windows 侧烧录全流程踩坑记录。</p>
-        <div class="meta">更新于 2026-09-27 · 约 24 KB</div>
+        <h3>WS63 星闪开发完全手册</h3>
+        <p>WSL + VSCode + Ubuntu 下 WS63 SparkLink 开发一站式手册：把环境搭建速查、编译烧录实操、排错对话三份笔记合并为一，含 PEP 668 排错、venv 环境搭建、menuconfig 切 demo、编译与 Windows 侧烧录全流程，并附 12 条综合排错表。</p>
+        <div class="meta">更新于 2026-09-29 · 约 22 KB</div>
       </a>
 
       <a class="card" href="materials/prompt-evaluator.html">
         <span class="badge b-eval">AI · 工具</span>
         <h3>Prompt 评测器 · 纯浏览器版</h3>
         <p>上传数据集、写 Prompt 模板、选模型发起评测，实时看 Exact Match / Token F1 / ROUGE-L / LLM 评分，支持多版本对比与显著性检验。零后端，数据不出本机。</p>
-        <div class="meta">更新于 2026-09-28 · 约 43 KB</div>
+        <div class="meta">更新于 2026-09-28 · 约 47 KB</div>
+      </a>
+
+      <a class="card" href="materials/itransformer-reproduce.html">
+        <span class="badge b-ml">AI · 复现</span>
+        <h3>iTransformer 论文复现手册</h3>
+        <p>ICLR 2024 Spotlight 论文四阶段复现流水线：三篇候选对比、论文七要素提取（架构/超参/伪代码/难点）、12 文件代码骨架、5 步验证主线 + 5 个消融实验、30 项进度追踪表，附预期结果区间与失败排查清单。换论文复现亦可照此流程走。</p>
+        <div class="meta">更新于 2026-09-29 · 约 48 KB</div>
       </a>
 
       <a class="card" href="materials/add-material-guide.html">

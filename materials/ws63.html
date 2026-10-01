@@ -1,370 +1,96 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WS63 实操手册 · 环境搭建速查 + 编译烧录</title>
-<meta name="description" content="WS63 SparkLink 开发：WSL+VSCode+Ubuntu 环境搭建速查，与编译到烧录全流程实操手册。">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>WS63 星闪开发完全手册</title>
 <style>
-  :root{
-    --ink:#24292f; --muted:#57606a; --line:#d0d7de; --bg:#ffffff;
-    --soft:#f6f8fa; --accent:#0969da; --accent-soft:#ddf4ff;
-    --warn-bg:#fff8c5; --warn-line:#d4a72c; --ok:#1a7f37;
-    --code-bg:#f6f8fa; --pre-bg:#0d1117; --pre-ink:#e6edf3;
-  }
-  *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
-  body{
-    margin:0; color:var(--ink); background:var(--soft);
-    font-family:"PingFang SC","Microsoft YaHei",-apple-system,"Segoe UI",system-ui,sans-serif;
-    line-height:1.75; font-size:16px;
-  }
-  .wrap{max-width:1180px;margin:0 auto;padding:0 20px;}
-
-  /* ===== 顶栏 ===== */
-  .topbar{
-    position:sticky; top:0; z-index:50;
-    background:rgba(255,255,255,.92); backdrop-filter:blur(8px);
-    border-bottom:1px solid var(--line);
-  }
-  .topbar .wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px;}
-  .brand{font-weight:800;font-size:18px;white-space:nowrap;}
-  .brand small{display:block;font-weight:500;color:var(--muted);font-size:12px;}
-  .tabs{display:flex;gap:8px;margin-left:auto;}
-  .tab{
-    border:1px solid var(--line);background:#fff;color:var(--ink);
-    padding:8px 16px;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;
-    transition:all .15s ease;
-  }
-  .tab:hover{border-color:var(--accent);color:var(--accent);}
-  .tab.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(9,105,218,.35);}
-
-  /* ===== 布局：侧目录 + 正文 ===== */
-  main.wrap{display:grid;grid-template-columns:230px minmax(0,1fr);gap:28px;padding-top:28px;padding-bottom:60px;}
-  .toc{position:sticky;top:76px;align-self:start;max-height:calc(100vh - 96px);overflow:auto;
-    background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
-  .toc h4{margin:0 0 8px;font-size:13px;color:var(--muted);letter-spacing:.08em;}
-  .toc a{display:block;color:var(--muted);text-decoration:none;font-size:13.5px;
-    padding:5px 10px;border-radius:8px;border-left:3px solid transparent;}
-  .toc a:hover{background:var(--soft);color:var(--ink);}
-  .toc a.on{color:var(--accent);background:var(--accent-soft);border-left-color:var(--accent);font-weight:700;}
-
-  /* ===== 文档卡片 ===== */
-  .doc{display:none;background:var(--bg);border:1px solid var(--line);border-radius:14px;
-    padding:34px 42px;box-shadow:0 1px 3px rgba(27,31,36,.06);}
-  .doc.active{display:block;animation:fade .25s ease;}
-  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
-
-  .doc h1{font-size:26px;line-height:1.35;margin:0 0 6px;padding-bottom:14px;border-bottom:1px solid var(--line);}
-  .doc .meta{color:var(--muted);font-size:14px;margin-bottom:20px;}
-  .doc h2{font-size:21px;margin:38px 0 12px;padding:6px 0 6px 12px;border-left:5px solid var(--accent);background:linear-gradient(90deg,var(--accent-soft),transparent 70%);border-radius:0 8px 8px 0;scroll-margin-top:80px;}
-  .doc h3{font-size:17px;margin:24px 0 8px;scroll-margin-top:80px;}
-  .doc p{margin:10px 0;}
-  .doc ul{margin:8px 0;padding-left:24px;}
-  .doc li{margin:4px 0;}
-  .doc b{font-weight:700;}
-  hr{border:none;border-top:1px dashed var(--line);margin:26px 0;}
-
-  /* 行内代码 */
-  code{
-    font-family:"Cascadia Code",Consolas,"JetBrains Mono",monospace;
-    background:var(--code-bg);border:1px solid var(--line);border-radius:6px;
-    padding:1px 6px;font-size:.88em;color:#cf222e;white-space:nowrap;
-  }
-  /* 代码块 */
-  pre{
-    background:var(--pre-bg);color:var(--pre-ink);border-radius:10px;
-    padding:14px 18px;overflow:auto;font-size:14px;line-height:1.65;margin:12px 0;
-  }
-  pre code{background:none;border:none;padding:0;color:inherit;white-space:pre;font-size:inherit;}
-  pre .cm{color:#8b949e;} /* 注释 */
-
-  /* 引用块 */
-  blockquote{
-    margin:14px 0;padding:10px 16px;background:var(--soft);
-    border-left:4px solid var(--line);border-radius:0 8px 8px 0;color:var(--muted);
-  }
-  blockquote p{margin:6px 0;}
-  blockquote.warn{background:var(--warn-bg);border-left-color:var(--warn-line);color:#6b5300;}
-  blockquote.ok{background:#dafbe1;border-left-color:var(--ok);color:#0f5323;}
-
-  /* 表格 */
-  .tbl{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:10px;}
-  table{border-collapse:collapse;width:100%;font-size:14.5px;}
-  th,td{border:1px solid var(--line);padding:8px 14px;text-align:left;vertical-align:top;}
-  th{background:var(--soft);font-weight:700;white-space:nowrap;}
-  tr:nth-child(even) td{background:#fbfcfd;}
-  td code,th code{white-space:normal;word-break:break-all;}
-
-  .pill{display:inline-block;background:var(--accent-soft);color:var(--accent);
-    border-radius:999px;padding:1px 10px;font-size:12.5px;font-weight:700;margin-right:6px;}
-
-  footer{border-top:1px solid var(--line);background:#fff;color:var(--muted);
-    text-align:center;font-size:13px;padding:22px 16px;}
-
-  @media (max-width:900px){
-    main.wrap{grid-template-columns:1fr;}
-    .toc{position:static;max-height:none;}
-    .doc{padding:22px 18px;}
-    .tabs{margin-left:0;}
-  }
-  @media print{
-    .topbar,.toc,footer{display:none;}
-    main.wrap{display:block;}
-    .doc{display:block;border:none;box-shadow:none;padding:0;}
-  }
-</style>
+    :root{
+      --bg:#f7f8fa; --panel:#ffffff; --ink:#1f2328; --muted:#5b6470;
+      --line:#e3e7ee; --brand:#2f6df0; --brand-soft:#eaf1ff;
+      --warn-bg:#fff7e6; --warn-bd:#ffd591; --warn-ink:#9c6b00;
+      --tip-bg:#eafaf0; --tip-bd:#8ce0a8; --tip-ink:#1c7a3e;
+      --note-bg:#eef3ff; --note-bd:#a9c7ff; --note-ink:#234;
+      --danger-bg:#fdeeee; --danger-bd:#f5a9a9; --danger-ink:#b3261e;
+      --code-bg:#1e2430; --code-ink:#e6edf3;
+    }
+    *{box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{
+      margin:0; background:var(--bg); color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",
+        "PingFang SC","Hiragino Sans GB","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+      font-size:15.5px; line-height:1.75;
+    }
+    .layout{display:flex; align-items:flex-start; max-width:1180px; margin:0 auto;}
+    .toc{
+      position:sticky; top:0; align-self:flex-start; width:260px; flex:none;
+      height:100vh; overflow:auto; padding:26px 18px; background:var(--panel);
+      border-right:1px solid var(--line);
+    }
+    .toc-title{font-weight:700; color:var(--brand); margin-bottom:12px; font-size:15px; letter-spacing:.5px;}
+    .toc a{display:block; color:var(--muted); text-decoration:none; padding:5px 8px; border-radius:7px; font-size:13.5px;}
+    .toc a:hover{background:var(--brand-soft); color:var(--brand);}
+    .toc-1{font-weight:700; color:var(--ink)!important; margin-top:8px;}
+    .toc-2{padding-left:18px!important;}
+    .content{flex:1; min-width:0; padding:34px 44px 80px;}
+    .h1{font-size:27px; margin:0 0 6px; color:var(--ink);}
+    .content > p:first-of-type{color:var(--muted); margin-top:0;}
+    .h2{font-size:21px; margin:34px 0 12px; padding-bottom:8px; border-bottom:2px solid var(--brand-soft); color:#16243b;}
+    .h3{font-size:17px; margin:24px 0 8px; color:#22324a;}
+    p{margin:10px 0;}
+    ul{margin:10px 0; padding-left:22px;}
+    li{margin:5px 0;}
+    .code{
+      background:var(--code-bg); color:var(--code-ink); padding:14px 16px; border-radius:10px;
+      font-family:"Cascadia Code","Consolas","SF Mono","JetBrains Mono",Menlo,Monaco,"Courier New",monospace;
+      font-size:13.5px; line-height:1.6; overflow:auto; white-space:pre; margin:12px 0;
+    }
+    code{
+      background:#eef1f6; color:#c0266b; padding:1.5px 6px; border-radius:5px;
+      font-family:"Cascadia Code","Consolas","SF Mono",Menlo,Monaco,"Courier New",monospace;
+      font-size:13px;
+    }
+    table{border-collapse:collapse; width:100%; margin:14px 0; font-size:14px; background:var(--panel);
+      box-shadow:0 1px 3px rgba(20,30,50,.06);}
+    th,td{border:1px solid var(--line); padding:9px 11px; text-align:left; vertical-align:top;}
+    th{background:var(--brand-soft); color:#1c3a73; font-weight:700;}
+    tbody tr:nth-child(even){background:#fafbfd;}
+    .callout{border-radius:11px; padding:13px 16px; margin:16px 0; border:1px solid; line-height:1.7;}
+    .callout .co-label{font-weight:700; margin-bottom:5px; font-size:14px;}
+    .callout .co-body{font-size:14.2px;}
+    .callout.warn{background:var(--warn-bg); border-color:var(--warn-bd);}
+    .callout.warn .co-label{color:var(--warn-ink);}
+    .callout.tip{background:var(--tip-bg); border-color:var(--tip-bd);}
+    .callout.tip .co-label{color:var(--tip-ink);}
+    .callout.note{background:var(--note-bg); border-color:var(--note-bd);}
+    .callout.note .co-label{color:#234;}
+    .callout.danger{background:var(--danger-bg); border-color:var(--danger-bd);}
+    .callout.danger .co-label{color:var(--danger-ink);}
+    .callout code{background:rgba(255,255,255,.6);}
+    @media (max-width:860px){
+      .toc{display:none;} .content{padding:22px 18px 60px;}
+    }
+    </style>
 </head>
 <body>
+<div class="layout">
+<nav class="toc"><div class="toc-title">目录</div><a class="toc-1" href="#sec-0">WS63 星闪（SparkLink）开发完全手册</a><a class="toc-2" href="#sec-1">一、核心心智模型（先记住）</a><a class="toc-2" href="#sec-2">二、你的环境背景</a><a class="toc-2" href="#sec-3">三、从零搭建环境（首次配置必做）</a><a class="toc-2" href="#sec-4">四、menuconfig 操作指南</a><a class="toc-2" href="#sec-5">五、编译（你只敲一条命令 —— 但切过 demo 时要先清理）</a><a class="toc-2" href="#sec-6">六、烧录（在 Windows 侧做，板子插在 Windows 上）</a><a class="toc-2" href="#sec-7">七、完整操作序列（照抄版）</a><a class="toc-2" href="#sec-8">八、常见坑 &amp; 排错总表（综合）</a><a class="toc-2" href="#sec-9">九、目录与文件路径说明（防迷路）</a><a class="toc-2" href="#sec-10">十、一句话总结</a></nav>
+<main class="content">
+<h1 id="sec-0" class="h1">WS63 星闪（SparkLink）开发完全手册</h1><p>从环境搭建到编译烧录 · 一站式参考</p><div class="callout note"><div class="co-label">📌 说明</div><div class="co-body">本手册由三份围绕 WS63 星闪开发的原始笔记合并整理而成：<br/>· 《WS63 SparkLink 开发环境速查手册》—— 从零搭建编译环境的排错记录<br/>· 《WS63 编译烧录实操手册》—— 配好环境后「编译 → 烧录」的标准动作<br/>· 一段排错对话记录 —— 补充 pycparser、终端混淆、kconfiglib 必须用 venv 才能 import 等关键点<br/><br/>目标：让你既能「从零把环境重新配出来」，也能「照着把已有代码编译烧录跑通」。</div></div><div class="callout tip"><div class="co-label">✅ 提示</div><div class="co-body">适用场景与约定：<br/>· 活工程路径：WSL <code>~/ws63/sparklink-book</code>（编译、改代码、开终端都用这一份）<br/>· 开发方式：Windows 上 VSCode 远程连 WSL Ubuntu；系统 Python 3.14，受 PEP 668 保护<br/>· 目标命令：<code>./build.py menuconfig ws63-liteos-app</code></div></div><h2 id="sec-1" class="h2">一、核心心智模型（先记住）</h2><p>整条链路只有四步，记住它就不容易乱：</p><pre class="code">menuconfig 决定「编谁」  →  你改的 main.c 决定「干什么」
+      →  编译打包成固件   →  烧录装进板子</pre><div class="callout warn"><div class="co-label">⚠ 注意</div><div class="co-body">两个最容易踩的坑，先预警：<br/>1. 同一章的 demo 是<strong>单选</strong>：你不进 menuconfig 切换，编译出来的永远是默认那个（hello world）。<br/>2. menuconfig 切了 demo 之后，<strong>直接增量编译往往还是编出旧的那个</strong>——旧的编译产物还躺在缓存里，CMake 没重新评估「该把哪个文件夹编进固件」。所以切完 demo 必须 <code>-c</code> 清理后再编译（见第五节）。</div></div><h2 id="sec-2" class="h2">二、你的环境背景</h2><table><thead><tr><th>项</th><th>值</th></tr></thead><tbody><tr><td>开发方式</td><td>Windows 上 VSCode，远程连 WSL</td></tr><tr><td>子系统</td><td>WSL Ubuntu</td></tr><tr><td>Python 版本</td><td>3.14（系统自带，受 PEP 668 保护）</td></tr><tr><td>项目路径</td><td><code>~/ws63/sparklink-book</code></td></tr><tr><td>要跑的命令</td><td><code>./build.py menuconfig ws63-liteos-app</code></td></tr></tbody></table><h2 id="sec-3" class="h2">三、从零搭建环境（首次配置必做）</h2><h3 id="sec-3-1" class="h3">3.1 第一个坑：`externally-managed-environment`</h3><p>现象：<code>sudo pip install xxx</code> 报 <code>error: externally-managed-environment</code>。</p><p>原因：Python 3.11 / Ubuntu 23.04 起启用 <strong>PEP 668</strong>，系统自带 Python 被标记为「由 apt 托管」，禁止 pip 往系统目录写包，避免破坏系统工具依赖。你的 Python 3.14 触发了它。<strong>这是保护机制，不是故障。</strong></p><div class="callout note"><div class="co-label">📌 说明</div><div class="co-body">核心结论：书的老写法 <code>sudo pip install xxx</code> 在旧 Ubuntu 能用，在你这新版系统已失效，要改用下面的正确渠道（apt / pipx / venv）。</div></div><h3 id="sec-3-2" class="h3">3.2 判断：这个包该走 apt 还是 pip / pipx / venv？</h3><table><thead><tr><th>类型</th><th>例子</th><th>安装方式</th></tr></thead><tbody><tr><td>系统级构建工具（命令行程序）</td><td>cmake、gcc、git</td><td><code>sudo apt install</code></td></tr><tr><td>Python 命令行工具（独立 app）</td><td>kconfiglib 当命令用（menuconfig/guiconfig）</td><td><code>pipx install</code></td></tr><tr><td>Python 库（代码里 <code>import</code> 用）</td><td>kconfiglib（被 build.py import）、pycparser</td><td><code>venv</code> + <code>pip install</code></td></tr><tr><td>apt 源里没有的 Python 包</td><td>kconfiglib、pycparser</td><td>apt 查不到 → 走 pip / pipx / venv</td></tr></tbody></table><h3 id="sec-3-3" class="h3">3.3 工具选型速查（PEP 668 之后）</h3><table><thead><tr><th>需求</th><th>命令</th><th>说明</th></tr></thead><tbody><tr><td>装系统程序</td><td><code>sudo apt install 包</code></td><td>系统级，最稳</td></tr><tr><td>装 Python 命令行 app</td><td><code>pipx install 包</code></td><td>每个工具独立小环境，命令进 PATH</td></tr><tr><td>装 Python 库（供 import）</td><td><code>python3 -m venv .venv</code> + <code>source .venv/bin/activate</code> + <code>pip install 包</code></td><td>build.py 这类脚本必须走这个</td></tr><tr><td>应急（不推荐）</td><td><code>pip install 包 --break-system-packages</code></td><td>绕过保护，有风险，别养成习惯</td></tr></tbody></table><p>书里出现的 <code>sudo pip install xxx</code>，在你的系统上统一翻译为：查得到 apt 包 → <code>sudo apt install xxx</code>；查不到 → 若是命令行工具用 <code>pipx install xxx</code>，<strong>若是库（会被 import）必须用 venv</strong>。</p><h3 id="sec-3-4" class="h3">3.4 正确操作流程（本项目完整版）</h3><div class="callout warn"><div class="co-label">⚠ 注意</div><div class="co-body">第 0 步：确认终端是 WSL，不是 PowerShell<br/>· 错：<code>PS C:\Users\yyk1a\ws63\sparklink-book&gt;</code>（Windows 路径 + PS 开头）<br/>· 对：<code>yyk1a@LAPTOP-xxx:~/ws63/sparklink-book$</code>（带 <code>$</code> 结尾、Linux 路径）<br/>· 切换：终端面板 <code>+</code> 右边的 <code>v</code> 下拉 → 选 <code>Ubuntu (WSL)</code>；或直接在 PowerShell 敲 <code>wsl</code> 切入。<br/>· 自检口诀：提示符 <code>PS C:\...</code> 开头 = 错；<code>user@...:~$</code> 结尾带 <code>$</code> = 对。<br/>  （在 PowerShell 里跑 <code>./build.py</code> 会被当成 Windows 的 Python 脚本，出现 <code>&gt;&gt;&gt;</code> 交互提示符、出不来 menuconfig 界面。）</div></div><p>第 1 步：进项目目录</p><pre class="code">cd ~/ws63/sparklink-book</pre><p>第 2 步：建 venv（独立 Python 环境）并激活</p><pre class="code">python3 -m venv .venv
+source .venv/bin/activate      # 激活后提示符前面出现 (.venv)</pre><div class="callout note"><div class="co-label">📌 说明</div><div class="co-body">venv 隔离的是「Python 运行环境 + 装的库」，你的代码文件原封不动，只是多了个 <code>.venv/</code> 文件夹。项目 <code>.gitignore</code> 里加 <code>.venv/</code>。<br/>⚠ 路径陷阱：venv 在 <code>~/ws63/sparklink-book/.venv</code>，<strong>不是</strong> <code>~/ws63</code>。在 <code>~/ws63</code> 下激活会报 <code>No such file</code>。</div></div><p>第 3 步：在 venv 里装需要的 Python 库</p><pre class="code">pip install setuptools        # 关键：Python 3.12+ 已删除标准库 distutils，build.py 用的 pkg_resources 依赖它
+pip install kconfiglib        # build.py 需要 import kconfiglib
+pip install pycparser         # 书里列的，按需（通常会被别的包自动带）</pre><div class="callout note"><div class="co-label">📌 说明</div><div class="co-body"><strong>为什么必须装 setuptools</strong>：Python 3.12 起官方删除了标准库 <code>distutils</code>，而新建的 venv 默认不预装 setuptools。书里的 build.py 通过 <code>pkg_resources</code>（属于 setuptools）调用 <code>distutils</code>，缺了就报 <code>ModuleNotFoundError: No module named &#x27;distutils&#x27;</code>。新版 setuptools 自带 distutils 兼容实现，装上即补齐。<br/><br/><strong>pipx 与 venv 的区别（关于 kconfiglib / pycparser）</strong>：<br/>· kconfiglib 既是命令行工具（pipx 的完美适用对象），又是 build.py 要 <code>import</code> 的库。pipx 把它隔离在小房间里，命令行能用，但脚本 <code>import</code> 不到——所以<strong>必须用 venv 装</strong>。<br/>· pycparser 本质是个「库」（解析 C 代码，通常是 cffi 的依赖），用 pipx 装能成功、书上的检查也能过，但它一般不需要你手动装，后面哪个工具真正需要它时会自动带进来。若书上报「缺少 pycparser」，在那个工具自己的环境里装即可。<br/><br/>之后若 build.py 再报 <code>ModuleNotFoundError: No module named &#x27;xxx&#x27;</code>，保持 <code>(.venv)</code> 激活，继续 <code>pip install xxx</code>（常客还有 <code>pyyaml</code> 等）。老 SDK 在新 Python 上跑，基本就是「缺什么补什么」。之前 pipx 装的 kconfiglib 不用删，留着没影响。</div></div><p>第 4 步：跑 menuconfig</p><pre class="code">./build.py menuconfig ws63-liteos-app</pre><p>终端清屏，出现蓝黄边框的 Kconfig 配置界面即成功。</p><div class="callout tip"><div class="co-label">✅ 提示</div><div class="co-body">以后每次开新终端，固定三连：<br/>cd ~/ws63/sparklink-book<br/>source .venv/bin/activate     # 看到 (.venv) 才算就绪<br/>./build.py menuconfig ws63-liteos-app<br/>（不想激活就退而求其次用 <code>~/.venv/bin/python build.py ...</code>，但激活更省心。）</div></div><h2 id="sec-4" class="h2">四、menuconfig 操作指南</h2><h3 id="sec-4-1" class="h3">4.1 切换你要编的 demo（换实验必做，否则白编）</h3><p>终端执行 <code>./build.py menuconfig ws63-liteos-app</code> 后，终端变成蓝黄边框菜单：</p><ul><li><code>↓</code> 移到 <code>Application</code> → 回车 → <code>ch2 samples</code></li><li><code>↑↓</code> 移到你要的 demo（例：<strong><code>Support LED Demo.</code></strong>）</li><li>按 <strong>空格</strong> 选中（单选：hello world 的勾会自动消失）</li><li><strong><code>S</code> 保存 → <code>Q</code> 退出</strong></li></ul><p>这一步写进 <code>.config</code>，决定编译时把哪个文件夹加进固件。如果你一直做同一个 demo、且当初已勾过，可跳过本步。</p><div class="callout warn"><div class="co-label">⚠ 注意</div><div class="co-body">光做 menuconfig 还不够：今天 LED 菜单切对了、编译也跑完了，板子却还是 hello world。根因是<strong>增量编译没刷新构建图</strong>——CMake 重新生成了配置头文件、重新打包，却没重新决定「把哪个 demo 编进固件」，hello world 的旧产物原封不动留在库里。所以切完 demo，<strong>必须紧跟第五节的 <code>-c</code> 清理</strong>，否则白切。</div></div><h3 id="sec-4-2" class="h3">4.2 menuconfig 界面按键（纯键盘，鼠标无效）</h3><table><thead><tr><th>按键</th><th>作用</th></tr></thead><tbody><tr><td>↑ ↓</td><td>上下移动高亮条</td></tr><tr><td>Enter</td><td>进入 <code>---&gt;</code> 结尾的子菜单</td></tr><tr><td>Esc 连按两次</td><td>返回上一级</td></tr><tr><td>空格 / Y</td><td>切换选项开 / 关</td></tr><tr><td><code>/</code></td><td>搜索配置项</td></tr><tr><td>S</td><td>保存配置</td></tr><tr><td>Q</td><td>退出（改动后按两次确认）</td></tr></tbody></table><p>改完记得 <strong>S 保存</strong> 再 Q 退出，否则不生效。</p><h2 id="sec-5" class="h2">五、编译（你只敲一条命令 —— 但切过 demo 时要先清理）</h2><p>保持 <code>(.venv)</code> 激活状态下执行：</p><pre class="code">./build.py -j1 ws63-liteos-app</pre><ul><li>编译到 <code>[100%]</code> 即成功，最后会打印固件路径，通常在：<code>output/ws63-liteos-app/firmware/bin/</code> 下的 <code>.fwpkg</code> / <code>.bin</code></li><li>中途若报 <code>ModuleNotFoundError: No module named &#x27;xxx&#x27;</code>：保持 <code>(.venv)</code> 激活，<code>pip install xxx</code> 再重编</li><li>黄色 <code>SyntaxWarning</code> 无视（老代码在新 Python 上的无害告警）</li></ul><div class="callout warn"><div class="co-label">⚠ 注意</div><div class="co-body"><strong>切换 demo 后必须 <code>-c</code> 清理重编</strong>（这是 LED 不生效的根因）：<br/>./build.py -c ws63-liteos-app     # 清掉整个 output 下的旧构建缓存<br/>./build.py -j1 ws63-liteos-app    # 全量重编（会花十几分钟，正常）<br/>第一次全新构建会自动全量配置，所以之前没遇到；但改过 menuconfig 之后是增量编译，CMake 不会重新把目标 demo 加进编译图。不清缓存 → 编出来的还是旧 demo（hello world）。所以「换实验」的标准流程是 <code>menuconfig 切换 → -c 清理 → -j1 编译</code> 三步缺一不可。</div></div><h2 id="sec-6" class="h2">六、烧录（在 Windows 侧做，板子插在 Windows 上）</h2><ul><li><strong>插板子</strong>：Type-C <strong>怼到底</strong>听到/感到「咔哒」，别只看红灯亮就以为到位（今天红灯亮但没插紧，导致设备识别失败）</li><li><strong>确认 COM 口</strong>：设备管理器 → 「端口 (COM 和 LPT)」出现 <code>USB-SERIAL CH340 (COMx)</code>，<strong>记下 COM 号</strong></li><li><strong>选固件</strong>：用烧录工具时，文件选 WSL 里的产物，直接在工具的文件框输：<br/>  <code>\\wsl$\Ubuntu\home\yyk1a\ws63\sparklink-book\output\ws63-liteos-app\firmware\bin\...</code><br/>  （不用把固件拷到 Windows）</li><li><strong>烧录</strong>：选对应 COM → 点烧录 → 按工具提示（通常按板子 <strong>RESET</strong> 键或重新插拔）开始下载，进度条走完即成功</li></ul><div class="callout warn"><div class="co-label">⚠ 注意</div><div class="co-body">必须烧<strong>本次新编译</strong>的固件，不能烧旧的 bin —— 改了 demo 不重编、只重烧旧文件，板子还是跑老程序。</div></div><h2 id="sec-7" class="h2">七、完整操作序列（照抄版）</h2><pre class="code"># —— 编译侧（WSL Ubuntu 终端） ——
+cd ~/ws63/sparklink-book          # 进工程（不是 ~/ws63）
+source .venv/bin/activate         # 激活，看到 (.venv)
+./build.py menuconfig ws63-liteos-app   # 切 demo：空格选中目标，S 保存 Q 退出
+./build.py -c  ws63-liteos-app    # 切过 demo 才需要：清旧缓存
+./build.py -j1 ws63-liteos-app    # 编译
 
-<header class="topbar">
-  <div class="wrap">
-    <div class="brand">🛠️ WS63 实操手册<small>WSL + VSCode + Ubuntu · sparklink-book 工程</small></div>
-    <nav class="tabs">
-      <button class="tab active" data-doc="env">① 环境搭建速查</button>
-      <button class="tab" data-doc="flash">② 编译烧录实操</button>
-    </nav>
-  </div>
-</header>
-
-<main class="wrap">
-
-  <!-- ============ 侧目录（随标签页切换） ============ -->
-  <aside class="toc" id="toc"></aside>
-
-  <!-- ============ 文档一：环境搭建速查 ============ -->
-  <article class="doc active" id="doc-env">
-    <h1>WS63 SparkLink 开发环境速查手册<span style="font-size:15px;color:var(--muted);font-weight:500;">（WSL + VSCode + Ubuntu 实战）</span></h1>
-    <p class="meta">整理自 2026-09-19 ~ 09-20 的一次真实排错过程 · 以项目 <code>~/ws63/sparklink-book</code> 为实例 · 目标命令：<code>./build.py menuconfig ws63-liteos-app</code></p>
-
-    <h2 id="env-1">一、你的环境背景</h2>
-    <div class="tbl"><table>
-      <tr><th>项</th><th>值</th></tr>
-      <tr><td>开发方式</td><td>Windows 上 VSCode，远程连 WSL</td></tr>
-      <tr><td>子系统</td><td>WSL Ubuntu</td></tr>
-      <tr><td>Python 版本</td><td>3.14（系统自带，受 PEP 668 保护）</td></tr>
-      <tr><td>项目路径</td><td><code>~/ws63/sparklink-book</code></td></tr>
-      <tr><td>要跑的命令</td><td><code>./build.py menuconfig ws63-liteos-app</code></td></tr>
-    </table></div>
-
-    <h2 id="env-2">二、第一个坑：externally-managed-environment</h2>
-    <p><b>现象</b>：<code>sudo pip install xxx</code> 报</p>
-    <pre><code>error: externally-managed-environment
-This environment is externally managed</code></pre>
-    <p><b>原因</b>：Python 3.11 / Ubuntu 23.04 起启用 <b>PEP 668</b>，系统自带 Python 被标记为"由 apt 托管"，禁止 pip 往系统目录写包，避免破坏系统工具依赖。Python 3.14 触发了它。<b>这是保护机制，不是故障。</b></p>
-    <p><b>核心结论</b>：书的老写法 <code>sudo pip install xxx</code> 在旧 Ubuntu 能用，在新版系统已失效，要改用下面的正确渠道。</p>
-
-    <h2 id="env-3">三、判断：这个包该走 apt 还是 pip？</h2>
-    <div class="tbl"><table>
-      <tr><th>类型</th><th>例子</th><th>安装方式</th></tr>
-      <tr><td>系统级构建工具（命令行程序）</td><td><b>cmake</b>、gcc、git</td><td><code>sudo apt install</code></td></tr>
-      <tr><td>Python 命令行工具（独立 app）</td><td><b>kconfiglib</b>（menuconfig/guiconfig 命令）</td><td><code>pipx install</code></td></tr>
-      <tr><td>Python 库（代码里 import 用）</td><td><b>kconfiglib（被 build.py import）</b>、pycparser</td><td><code>venv</code> + <code>pip install</code></td></tr>
-      <tr><td>apt 源里没有的 Python 包</td><td>kconfiglib、pycparser</td><td>apt 查不到 → 走 pip/pipx/venv</td></tr>
-    </table></div>
-    <p><b>项目里的对应关系</b>：</p>
-    <ul>
-      <li><code>cmake</code> → <code>sudo apt install cmake</code>（apt 有，系统级编译工具，<b>已装好</b> ✅）</li>
-      <li><code>kconfiglib</code> → 既是命令行工具又是 build.py 要 import 的库 → <b>必须用 venv</b>（见第五节）</li>
-    </ul>
-
-    <h2 id="env-4">四、工具选型速查（PEP 668 之后）</h2>
-    <div class="tbl"><table>
-      <tr><th>需求</th><th>命令</th><th>说明</th></tr>
-      <tr><td>装系统程序</td><td><code>sudo apt install 包</code></td><td>系统级，最稳</td></tr>
-      <tr><td>装 Python 命令行 app</td><td><code>pipx install 包</code></td><td>每个工具独立小环境，命令进 PATH</td></tr>
-      <tr><td>装 Python 库（供 import）</td><td><code>python3 -m venv .venv</code> + <code>source .venv/bin/activate</code> + <code>pip install 包</code></td><td>build.py 这类脚本必须走这个</td></tr>
-      <tr><td>应急（不推荐）</td><td><code>pip install 包 --break-system-packages</code></td><td>绕过保护，有风险，别养成习惯</td></tr>
-    </table></div>
-    <blockquote>
-      <p>书里出现的 <code>sudo pip install xxx</code>，在新系统上统一翻译为：</p>
-      <p>· 查得到 apt 包 → <code>sudo apt install xxx</code><br>
-      · 查不到 → 若是命令行工具用 <code>pipx install xxx</code>；<b>若是库（会被 import）必须用 venv</b></p>
-    </blockquote>
-
-    <h2 id="env-5">五、正确操作流程（完整版）</h2>
-    <h3>第 0 步：确认终端是 WSL，不是 PowerShell</h3>
-    <ul>
-      <li>❌ 错：<code>PS C:\Users\yyk1a\ws63\sparklink-book&gt;</code></li>
-      <li>✅ 对：<code>yyk1a@LAPTOP-xxx:~/ws63/sparklink-book$</code>（带 <code>$</code> 结尾、Linux 路径）</li>
-      <li>切换：终端面板 <code>+</code> 右边的 <code>v</code> 下拉 → 选 <code>Ubuntu (WSL)</code>；或直接在 PowerShell 敲 <code>wsl</code></li>
-    </ul>
-    <h3>第 1 步：进项目目录</h3>
-    <pre><code>cd ~/ws63/sparklink-book</code></pre>
-    <h3>第 2 步：建 venv（独立 Python 环境）</h3>
-    <pre><code>python3 -m venv .venv
-source .venv/bin/activate      <span class="cm"># 激活后提示符前面出现 (.venv)</span></code></pre>
-    <blockquote><p>venv 隔离的是"Python 运行环境 + 装的库"，<b>代码文件原封不动</b>，只是多了个 <code>.venv/</code> 文件夹。项目 <code>.gitignore</code> 里加 <code>.venv/</code>。</p></blockquote>
-    <h3>第 3 步：在 venv 里装需要的 Python 库</h3>
-    <pre><code>pip install setuptools        <span class="cm"># ⚠️ 关键：Python 3.12+ 已删除标准库 distutils，build.py 用的 pkg_resources 依赖它</span>
-pip install kconfiglib        <span class="cm"># build.py 需要 import kconfiglib</span>
-pip install pycparser         <span class="cm"># 书里列的，按需（通常会被别的包自动带）</span></code></pre>
-    <blockquote>
-      <p><b>为什么必须装 setuptools</b>：Python 3.12 起官方删除了标准库 <code>distutils</code>，而新建的 venv 默认不预装 setuptools。书里的 build.py 通过 <code>pkg_resources</code>（属于 setuptools）调用 <code>distutils</code>，缺了就报 <code>ModuleNotFoundError: No module named 'distutils'</code>。新版 setuptools 自带 distutils 兼容实现，装上即补齐。</p>
-      <p>之后若 build.py 再报 <code>ModuleNotFoundError: No module named 'xxx'</code>，保持 <code>(.venv)</code> 激活，继续 <code>pip install xxx</code>（常客还有 <code>pyyaml</code> 等）。老 SDK 在新 Python 上跑，基本就是"缺什么补什么"。</p>
-    </blockquote>
-    <h3>第 4 步：跑 menuconfig</h3>
-    <pre><code>./build.py menuconfig ws63-liteos-app</code></pre>
-    <p>终端清屏，出现蓝黄边框的 Kconfig 配置界面即成功。</p>
-    <h3>以后每次开新终端</h3>
-    <pre><code>cd ~/ws63/sparklink-book
-source .venv/bin/activate     <span class="cm"># 看到 (.venv) 才算就绪</span>
-./build.py menuconfig ws63-liteos-app</code></pre>
-
-    <h2 id="env-6">六、menuconfig 界面按键（纯键盘，鼠标无效）</h2>
-    <div class="tbl"><table>
-      <tr><th>按键</th><th>作用</th></tr>
-      <tr><td>↑ ↓</td><td>上下移动高亮条</td></tr>
-      <tr><td>Enter</td><td>进入 <code>---&gt;</code> 结尾的子菜单</td></tr>
-      <tr><td>Esc 连按两次</td><td>返回上一级</td></tr>
-      <tr><td>空格 / Y</td><td>切换选项开/关</td></tr>
-      <tr><td><code>/</code></td><td>搜索配置项</td></tr>
-      <tr><td>S</td><td>保存配置</td></tr>
-      <tr><td>Q</td><td>退出（改动后按两次确认）</td></tr>
-    </table></div>
-    <blockquote class="warn"><p>改完记得 <b>S 保存</b> 再 Q 退出，否则不生效。</p></blockquote>
-
-    <h2 id="env-7">七、报错 → 对策 速查表</h2>
-    <div class="tbl"><table>
-      <tr><th>报错现象</th><th>原因</th><th>对策</th></tr>
-      <tr><td><code>externally-managed-environment</code></td><td>pip 直装系统 Python 被拦</td><td>改用 apt / pipx / venv</td></tr>
-      <tr><td><code>Unable to locate package xxx</code>（apt）</td><td>apt 源无此包</td><td>查不到就走 pip/pipx/venv</td></tr>
-      <tr><td><code>ModuleNotFoundError: No module named 'kconfiglib'</code></td><td>pipx 装的只能命令行用、import 不到</td><td>在 <b>venv</b> 里 <code>pip install kconfiglib</code> 再跑 build.py</td></tr>
-      <tr><td><code>ModuleNotFoundError: No module named 'distutils'</code></td><td>Python 3.12+ 删了标准库 distutils，venv 又没预装 setuptools</td><td>在 <b>venv</b> 里 <code>pip install setuptools</code> 再跑 build.py</td></tr>
-      <tr><td>终端出现 <code>&gt;&gt;&gt;</code> 或 <code>&gt;&gt;</code> 提示符、无 menuconfig</td><td>在 <b>PowerShell</b> 里跑了脚本</td><td>切到 WSL Ubuntu 终端重来</td></tr>
-      <tr><td>黄色 <code>SyntaxWarning: "\S" is invalid escape sequence</code></td><td>老代码在新 Python 的无害告警</td><td>忽略，不影响运行</td></tr>
-    </table></div>
-
-    <h2 id="env-8">八、一句话总结</h2>
-    <blockquote class="ok"><p>系统工具（cmake）走 <code>apt</code>；Python 命令行工具走 <code>pipx</code>；<b>被 build.py import 的库（kconfiglib）必须放进 venv</b>；一切命令在 <b>WSL Ubuntu 终端</b>里跑，别在 PowerShell。</p></blockquote>
-  </article>
-
-  <!-- ============ 文档二：编译烧录实操 ============ -->
-  <article class="doc" id="doc-flash">
-    <h1>WS63 编译到烧录 · 实操手册</h1>
-    <p class="meta">2026-09-22 整理 · 适用场景：写好/改好某个 demo 的代码，从「编译」一路搞到「板子跑起来」 · 活工程在 WSL：<code>~/ws63/sparklink-book</code></p>
-
-    <h2 id="fl-0">0. 一句话心智模型（先记住）</h2>
-    <pre><code>menuconfig 决定「编谁」 →  你改的 main.c 决定「干什么」
-→  编译打包成固件  →  烧录装进板子</code></pre>
-    <p>同一章的 demo 是<b>单选</b>：你不进 menuconfig 切换，编译出来的永远是默认那个（hello world）。这是最容易踩的坑之一。</p>
-    <blockquote class="warn"><p>⚠️ <b>关联的第二个大坑（已确诊）</b>：menuconfig 切了 demo 之后，<b>直接增量编译往往还是编出旧的那个</b>。因为旧的编译产物还躺在缓存里，CMake 没重新评估「该把哪个文件夹编进固件」。所以切完 demo 必须 <code>./build.py -c</code> 清理后再编译（详见第 3 节）。</p></blockquote>
-
-    <h2 id="fl-1">1. 每次动手前的固定前置（新终端都要做）</h2>
-    <p><span class="pill">你要做</span>打开 VSCode → 连 WSL（左下角显示 <code>WSL: Ubuntu</code>）→ 打开文件夹 <code>/home/yyk1a/ws63/sparklink-book</code>。</p>
-    <p><span class="pill">你要做</span>在 VSCode 集成终端（<code>Ctrl + `</code>）里，每开一次新终端先激活环境（看到 <code>(.venv)</code> 才算就绪）：</p>
-    <pre><code>source .venv/bin/activate</code></pre>
-    <blockquote class="warn"><p>⚠️ 路径陷阱：venv 在 <code>~/ws63/sparklink-book/.venv</code>，<b>不是</b> <code>~/ws63</code>。在 <code>~/ws63</code> 下激活会报 <code>No such file</code>。先 <code>cd ~/ws63/sparklink-book</code>。</p></blockquote>
-
-    <h2 id="fl-2">2. 切换你要编的 demo（换实验必做，否则白编）</h2>
-    <p><span class="pill">你要做</span>终端执行</p>
-    <pre><code>./build.py menuconfig ws63-liteos-app</code></pre>
-    <p>终端变成蓝黄边框菜单后：</p>
-    <ul>
-      <li><code>↓</code> 移到 <code>Application</code> → 回车 → <code>ch2 samples</code></li>
-      <li><code>↑↓</code> 移到你要的 demo（例：<b>Support LED Demo.</b>）</li>
-      <li>按 <b>空格</b> 选中（单选：hello world 的勾会自动消失）</li>
-      <li><b>S 保存 → Q 退出</b></li>
-    </ul>
-    <p>✅ 这一步写进 <code>.config</code>，决定编译时把哪个文件夹加进固件。</p>
-    <blockquote>
-      <p>如果一直做同一个 demo、且当初已勾过，可跳过本步。</p>
-      <p>⚠️ <b>光做 menuconfig 还不够</b>：LED 菜单切对了、编译也跑完了，板子却还是 hello world。根因是<b>增量编译没刷新构建图</b>——CMake 重新生成了配置头文件、重新打包，却没重新决定「把哪个 demo 编进固件」，hello world 的旧产物原封不动留在库里。所以切完 demo，<b>必须紧跟第 3 节的 <code>-c</code> 清理</b>，否则白切。</p>
-    </blockquote>
-
-    <h2 id="fl-3">3. 编译（一条命令 —— 但切过 demo 时要先清理）</h2>
-    <p><span class="pill">你要做</span></p>
-    <pre><code>./build.py -j1 ws63-liteos-app</code></pre>
-    <ul>
-      <li>编译到 <code>[100%]</code> 即成功，最后会打印固件路径，通常在：<code>output/ws63-liteos-app/firmware/bin/</code> 下的 <code>.fwpkg</code> / <code>.bin</code></li>
-      <li>中途若报 <code>ModuleNotFoundError: No module named 'xxx'</code>：保持 <code>(.venv)</code> 激活，<code>pip install xxx</code> 再重编。</li>
-      <li>黄色 <code>SyntaxWarning</code> 无视。</li>
-    </ul>
-    <blockquote class="warn"><p>⚠️ <b>切换 demo 后必须 <code>-c</code> 清理重编</b>（这是 LED 不生效的根因）：</p></blockquote>
-    <pre><code>./build.py -c ws63-liteos-app     <span class="cm"># 清掉整个 output 下的旧构建缓存</span>
-./build.py -j1 ws63-liteos-app    <span class="cm"># 全量重编（会花十几分钟，正常）</span></code></pre>
-    <p>第一次全新构建会自动全量配置，所以之前没遇到；<b>但改过 menuconfig 之后是增量编译，CMake 不会重新把目标 demo 加进编译图</b>。不清缓存 → 编出来的还是旧 demo（hello world）。所以「换实验」的标准流程是 <b>menuconfig 切换 → <code>-c</code> 清理 → <code>-j1</code> 编译</b> 三步缺一不可。</p>
-
-    <h2 id="fl-4">4. 烧录（在 Windows 侧做，板子插在 Windows 上）</h2>
-    <p><span class="pill">插板子</span>Type-C <b>怼到底</b>听到/感到「咔哒」，别只看红灯亮就以为到位（红灯亮但没插紧，会导致设备识别失败）。</p>
-    <p><span class="pill">确认 COM 口</span>设备管理器 → 「端口 (COM 和 LPT)」出现 <code>USB-SERIAL CH340 (COMx)</code>，<b>记下 COM 号</b>。</p>
-    <p><span class="pill">选固件</span>用烧录工具时，文件选 WSL 里的产物，直接在工具的文件框输：</p>
-    <pre><code>\\wsl$\Ubuntu\home\yyk1a\ws63\sparklink-book\output\ws63-liteos-app\firmware\bin\...</code></pre>
-    <p>（不用把固件拷到 Windows）</p>
-    <p><span class="pill">烧录</span>选对应 COM → 点烧录 → 按工具提示（通常按板子 <b>RESET</b> 键或重新插拔）开始下载，进度条走完即成功。</p>
-    <blockquote class="warn"><p>⚠️ 必须烧<b>本次新编译</b>的固件，不能烧旧的 bin —— 改了 demo 不重编、只重烧旧文件，板子还是跑老程序。</p></blockquote>
-
-    <h2 id="fl-5">5. 完整操作序列（照抄版）</h2>
-    <pre><code>cd ~/ws63/sparklink-book          <span class="cm"># 进工程（不是 ~/ws63）</span>
-source .venv/bin/activate         <span class="cm"># 激活，看到 (.venv)</span>
-./build.py menuconfig ws63-liteos-app   <span class="cm"># 切 demo：空格选中 LED Demo，S 保存 Q 退出</span>
-./build.py -j1 ws63-liteos-app    <span class="cm"># 编译</span></code></pre>
-    <p>然后 → Windows 烧录工具选 <code>\\wsl$\...</code> 下新固件 + 对应 COM 口 + 按 RESET。</p>
-
-    <h2 id="fl-6">6. 踩过的坑（都是操作层面）</h2>
-    <div class="tbl"><table>
-      <tr><th>现象</th><th>原因（操作）</th><th>正确做法</th></tr>
-      <tr><td>激活 venv 报 <code>No such file</code></td><td>在 <code>~/ws63</code> 而不是 <code>~/ws63/sparklink-book</code></td><td>先 <code>cd</code> 进工程目录再激活</td></tr>
-      <tr><td>烧完还是 hello world</td><td>没进 menuconfig 把单选切到 LED Demo</td><td>编译前先 menuconfig 空格选中目标 demo</td></tr>
-      <tr><td>板子识别不到 / 「设备描述符请求失败」</td><td>Type-C 没插紧，红灯亮 ≠ 接触好</td><td>怼到底听到咔哒</td></tr>
-      <tr><td>VSCode 改名后标签报「找不到文件」</td><td>旧拷贝被改名，标签页记着老路径</td><td>关掉死标签，重新打开 WSL 工程</td></tr>
-    </table></div>
-
-    <h2 id="fl-7">7. 关于那两份目录（防迷路）</h2>
-    <ul>
-      <li><b>活工程（编译用的）</b>：WSL <code>~/ws63/sparklink-book</code>，含 <code>build.py</code>、<code>.venv</code>。</li>
-      <li><b>Windows 旧镜像</b>：已改名 <code>C:\Users\yyk1a\ws63\_backup_sparklink-book_win</code>，<b>只用来看代码、不要编译它</b>，免得「A 份改了、B 份编了」。</li>
-      <li>改代码、编译、开终端一律用 WSL 这份；烧录用 <code>\\wsl$</code> 路径取它的产物。</li>
-    </ul>
-  </article>
-
+# —— 烧录侧（Windows） ——
+# 设备管理器确认 COMx → 烧录工具选 \\wsl$\... 下新固件 → 选 COM → 烧录 → 按 RESET</pre><h2 id="sec-8" class="h2">八、常见坑 &amp; 排错总表（综合）</h2><table><thead><tr><th>现象 / 报错</th><th>原因</th><th>正确做法</th></tr></thead><tbody><tr><td><code>externally-managed-environment</code></td><td>pip 直装系统 Python 被 PEP 668 拦下</td><td>改用 apt / pipx / venv</td></tr><tr><td><code>Unable to locate package xxx</code>（apt）</td><td>apt 源无此包</td><td>查不到就走 pip / pipx / venv</td></tr><tr><td><code>ModuleNotFoundError: No module named &#x27;kconfiglib&#x27;</code></td><td>pipx 装的只能命令行用、import 不到</td><td>在 <strong>venv</strong> 里 <code>pip install kconfiglib</code> 再跑 build.py</td></tr><tr><td><code>ModuleNotFoundError: No module named &#x27;distutils&#x27;</code></td><td>Python 3.12+ 删了标准库 distutils，venv 又没预装 setuptools</td><td>在 <strong>venv</strong> 里 <code>pip install setuptools</code> 再跑</td></tr><tr><td>终端出现 <code>&gt;&gt;&gt;</code> / <code>&gt;&gt;</code> 提示符、无 menuconfig</td><td>在 <strong>PowerShell</strong> 里跑了脚本</td><td>切到 WSL Ubuntu 终端重来</td></tr><tr><td>黄色 <code>SyntaxWarning: &quot;\S&quot; is invalid escape sequence</code></td><td>老代码在新 Python 的无害告警</td><td>忽略，不影响运行</td></tr><tr><td>激活 venv 报 <code>No such file</code></td><td>在 <code>~/ws63</code> 而不是 <code>~/ws63/sparklink-book</code></td><td>先 <code>cd</code> 进工程目录再激活</td></tr><tr><td>烧完板子还是 hello world</td><td>没进 menuconfig 把单选切到目标 demo</td><td>编译前先 menuconfig 空格选中目标 demo</td></tr><tr><td>切了 demo 仍编出旧的</td><td>增量编译没刷新构建图</td><td>切完紧跟 <code>-c</code> 清理再 <code>-j1</code> 编译</td></tr><tr><td>板子识别不到 / 「设备描述符请求失败」</td><td>Type-C 没插紧，红灯亮 ≠ 接触好</td><td>怼到底听到「咔哒」</td></tr><tr><td>VSCode 改名后标签报「找不到文件」</td><td>旧拷贝被改名，标签页记着老路径</td><td>关掉死标签，重新打开 WSL 工程</td></tr><tr><td>烧了新固件但行为没变</td><td>烧的是旧 bin（改了 demo 没重编）</td><td>必须烧本次新编译的固件</td></tr></tbody></table><h2 id="sec-9" class="h2">九、目录与文件路径说明（防迷路）</h2><ul><li><strong>活工程（编译用的）</strong>：WSL <code>~/ws63/sparklink-book</code>，含 <code>build.py</code>、<code>.venv</code>。改代码、编译、开终端一律用这一份。</li><li><strong>Windows 旧镜像</strong>：已改名 <code>C:\Users\yyk1a\ws63\_backup_sparklink-book_win</code>，<strong>只用来看代码、不要编译它</strong>，免得「A 份改了、B 份编了」。</li><li>烧录用 <code>\\wsl$</code> 路径取活工程的产物，不用把固件拷到 Windows。</li></ul><h2 id="sec-10" class="h2">十、一句话总结</h2><div class="callout tip"><div class="co-label">✅ 提示</div><div class="co-body">系统工具（cmake）走 <code>apt</code>；Python 命令行工具走 <code>pipx</code>；<strong>被 build.py import 的库（kconfiglib）必须放进 venv</strong>；一切命令在 <strong>WSL Ubuntu 终端</strong>里跑，别在 PowerShell。换实验的标准动作是 <code>menuconfig 切换 → -c 清理 → -j1 编译 → Windows 烧录新固件</code>。</div></div>
 </main>
-
-<footer>
-  WS63 SparkLink 实操手册 · 环境搭建速查 + 编译烧录 · 整理于 2026-09
-</footer>
-
-<script>
-(function(){
-  var tabs=document.querySelectorAll('.tab');
-  var docs={env:document.getElementById('doc-env'),flash:document.getElementById('doc-flash')};
-  var toc=document.getElementById('toc');
-  var cur='env';
-
-  function buildTOC(key){
-    var hs=docs[key].querySelectorAll('h2');
-    var html='<h4>本页目录</h4>';
-    hs.forEach(function(h){ html+='<a href="#'+h.id+'" data-t="'+h.id+'">'+h.textContent+'</a>'; });
-    toc.innerHTML=html;
-    toc.querySelectorAll('a').forEach(function(a){
-      a.addEventListener('click',function(e){
-        e.preventDefault();
-        var el=document.getElementById(a.dataset.t);
-        if(el) el.scrollIntoView({behavior:'smooth'});
-      });
-    });
-  }
-  function spy(){
-    var links=toc.querySelectorAll('a'); if(!links.length) return;
-    var best=null;
-    links.forEach(function(a){
-      var el=document.getElementById(a.dataset.t);
-      if(el && el.getBoundingClientRect().top<=110) best=a;
-    });
-    links.forEach(function(a){ a.classList.toggle('on',a===best); });
-  }
-  tabs.forEach(function(b){
-    b.addEventListener('click',function(){
-      tabs.forEach(function(x){x.classList.remove('active');});
-      b.classList.add('active');
-      cur=b.dataset.doc;
-      for(var k in docs) docs[k].classList.toggle('active',k===cur);
-      buildTOC(cur); window.scrollTo({top:0}); spy();
-    });
-  });
-  window.addEventListener('scroll',spy,{passive:true});
-  buildTOC(cur); spy();
-})();
-</script>
+</div>
 </body>
 </html>
